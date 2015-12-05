@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<load_cell>
+  <voltage>5</voltage>
+  <resistance>20</resistance>
+</load_cell>

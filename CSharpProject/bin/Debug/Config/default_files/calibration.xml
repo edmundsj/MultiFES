@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<calibration>
+  <load_cell>
+    <mvc>20</mvc>
+  </load_cell>
+  <node>
+  <node_id>1</node_id>
+    <maximum_amplitude>255</maximum_amplitude>
+  </node>
+  <node>
+  <node_id>6</node_id>
+    <maximum_amplitude>160</maximum_amplitude>
+  </node>
+</calibration>

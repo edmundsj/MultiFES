@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<protocol>
+  <autonomous_stimulation>false</autonomous_stimulation>
+  <frequency>23</frequency>
+  <nominal_amplitude>10</nominal_amplitude>
+  <maximum_amplitude>255</maximum_amplitude>
+  <amplitude_ramp_time>2</amplitude_ramp_time>
+</protocol>

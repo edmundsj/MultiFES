@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<microcontroller>
+  <baud_rate>19200</baud_rate>
+  <port_name>COM3</port_name>
+</microcontroller>
