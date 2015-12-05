@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<defaults>
-	<protocol_file>default_files\\stimulation_protocol.xml</protocol_file>
-	<electrode_array_file>default_files\\electrode_array.xml</electrode_array_file>
-	<load_cell_file>default_files\\load_cell.xml</load_cell_file>
-	<microcontroller_file>default_files\\microcontroller.xml</microcontroller_file>
-</defaults>

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiFES", "CSharpProject\MultiFES.csproj", "{2697C821-E32B-4FB4-A68D-1C1F7C591ADF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiFES", "MultiFES\MultiFES.csproj", "{2697C821-E32B-4FB4-A68D-1C1F7C591ADF}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "CSharpInstaller", "CSharpInstaller\CSharpInstaller.vdproj", "{6802A0EB-9CE3-4B69-9784-60ECAC75144B}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "MultiFES Installer", "MultiFES Installer\CSharpInstaller.vdproj", "{4506FE80-C0C9-4E6B-A04C-7ED47CA796B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,9 +17,10 @@ Global
 		{2697C821-E32B-4FB4-A68D-1C1F7C591ADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2697C821-E32B-4FB4-A68D-1C1F7C591ADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2697C821-E32B-4FB4-A68D-1C1F7C591ADF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6802A0EB-9CE3-4B69-9784-60ECAC75144B}.Debug|Any CPU.ActiveCfg = Debug
-		{6802A0EB-9CE3-4B69-9784-60ECAC75144B}.Debug|Any CPU.Build.0 = Debug
-		{6802A0EB-9CE3-4B69-9784-60ECAC75144B}.Release|Any CPU.ActiveCfg = Release
+		{4506FE80-C0C9-4E6B-A04C-7ED47CA796B5}.Debug|Any CPU.ActiveCfg = Debug
+		{4506FE80-C0C9-4E6B-A04C-7ED47CA796B5}.Debug|Any CPU.Build.0 = Debug
+		{4506FE80-C0C9-4E6B-A04C-7ED47CA796B5}.Release|Any CPU.ActiveCfg = Release
+		{4506FE80-C0C9-4E6B-A04C-7ED47CA796B5}.Release|Any CPU.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

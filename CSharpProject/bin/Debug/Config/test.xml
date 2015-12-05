@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<defaults>
-  <protocol_file>test_files\\stimulation_protocol.xml</protocol_file>
-  <electrode_array_file>test_files\\electrode_array.xml</electrode_array_file>
-  <microcontroller_file>test_files\\microcontroller.xml</microcontroller_file>
-  <load_cell_file>test_files\\load_cell.xml</load_cell_file>
-  <calibration_file>test_files\\calibration.xml</calibration_file>
-</defaults>
