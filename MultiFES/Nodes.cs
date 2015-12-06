@@ -41,7 +41,7 @@ namespace CSharpProject
         public static void rotateNodesAsync(Object thread_info)
         {
             // only proceed if we have an active timekeeper
-            if (Timekeeeper.Experimental.Running || Timekeeeper.General.Running)
+            if (Timekeeeper.Experimental.IsRunning || Timekeeeper.General.IsRunning)
             {
                 // first we get the current time
                 // if we are running an experiment, the start time is determined by the Experimental time
@@ -338,9 +338,9 @@ namespace CSharpProject
                         Index, Convert.ToInt16(amplitude)).Bytes);
 
                     // and we add the amplitude to our data if an experiment is running.
-                    if (Timekeeeper.Experimental.Running)
+                    if (Timekeeeper.IsRunning)
                     {
-                        Data.Experimental.Amplitudes[Nodes.getReverseIndex(Index)].addData(Timekeeeper.ElapsedSeconds,
+                        Data.Amplitudes[Nodes.getReverseIndex(Index)].addData(Timekeeeper.ElapsedSeconds,
                             amplitude);
                     }
                 }
@@ -478,61 +478,3 @@ namespace CSharpProject
         public static List<int> Widths { get; set; } = new List<int>();
     }
 }
-
-/*
-           try {
-               // this tells us where the line of intersection should be between the node ramping up
-               // and the node ramping down.
-               double portion_active = (double)thread_info;
-               // first, we select both an active node and a dormant node.
-
-               if (portion_active <= 1.0)
-               {
-                   Node active_node = selectNode(Settings.NodeStatus.ACTIVE);
-                   Node dormant_node = selectNode(Settings.NodeStatus.DORMANT);
-
-
-                   int dormant_node_step = Convert.ToInt16((double)dormant_node.MaximumAmplitude /
-                       Settings.Experimental.MaximumSteps / (Settings.Experimental.RampTime));
-                   int dormant_node_step_duration = Convert.ToInt16(255.0 / dormant_node_step * 
-                       Settings.Experimental.RampTime); // in milliseconds, the 0.6 to correct for the fact we are using a sleep.
-                   if(Settings.Experimental.RampTime >= 1.5)
-                   {
-                       dormant_node_step_duration = Convert.ToInt16(dormant_node_step_duration * 0.6);
-                   }
-                   int active_node_step = Convert.ToInt16((double)active_node.Amplitude /
-                       Settings.Experimental.MaximumSteps / (Settings.Experimental.RampTime * portion_active));
-
-                   // the 0.1 is to correct for the rounding errors encountered.
-                   double active_node_delay = (1.0 - portion_active) * Settings.Experimental.RampTime;
-
-
-                   while (active_node.Amplitude > 0 || dormant_node.Amplitude < dormant_node.MaximumAmplitude)
-                   {
-                       // this is our delay
-                       if (Timekeeeper.Experimental.ElapsedSeconds -
-                           Data.Experimental.Rotations * Settings.Experimental.Interval
-                           > active_node_delay)
-                       {
-                           if (active_node.Amplitude > 0) // don't call this any more than we need to
-                               active_node.Amplitude -= active_node_step;
-                       }
-
-                       if (dormant_node.Amplitude < dormant_node.MaximumAmplitude)
-                       {
-                           if (dormant_node.Amplitude + dormant_node_step > dormant_node.MaximumAmplitude)
-                               dormant_node.Amplitude = dormant_node.MaximumAmplitude;
-                           else
-                           {
-                               dormant_node.Amplitude += dormant_node_step;
-                           }
-                       }
-                       Thread.Sleep(dormant_node_step_duration);
-                   }
-               }
-           }
-           catch (ArgumentOutOfRangeException our_ex)
-           {
-               MessageBox.Show("Defined Error, rotateNodes(): " + our_ex.Message);
-           }
-           */

@@ -305,6 +305,11 @@ namespace CSharpProject
             }
         }
 
+        public static class General
+        {
+            public static List<Capsule> Amplitudes = new List<Capsule>();
+        }
+
         public static class Experimental // our experimental data.
         {
             public static void Clear() // clears all data
@@ -319,6 +324,7 @@ namespace CSharpProject
             public static int Rotations { get; set; } // how many rotations have we gone through?
 
             public static Capsule ForceData = new Capsule();
+
             public static List<Capsule> Amplitudes = new List<Capsule>(); // stores our node amplitude data.
 
             public static double MaxForce { set; get; } = 16;    // measured in Newtons / 9.8 (kg weight equivalents)
@@ -326,157 +332,35 @@ namespace CSharpProject
 
         }
 
-        // this is the class that will handle all of our graphing operations.
-        public class Graph
+        // this returns experimental data if an experiment is running and our input buffer otherwise
+        public static Capsule ForceData
         {
-            // this initializes a graph with a certain data capsule as its data source
-            public Graph(Capsule s)
+            get
             {
-                wrapped_chart = new Chart();
-                wrapped_area = new ChartArea();
-                wrapped_chart.ChartAreas.Add(wrapped_area);
-
-                this.sources.Add(s);
-                Series new_series = new Series(series.Count.ToString()); // set the name of the series to the count
-                this.series.Add(new_series);
-                this.wrapped_chart.Series.Add(this.series[this.series.Count - 1]);
-                currently_showing.Add(new Capsule());
-            }
-
-            public Graph(List<Capsule> capsule_list)
-            {
-                wrapped_chart = new Chart();
-                wrapped_area = new ChartArea();
-                wrapped_chart.ChartAreas.Add(wrapped_area);
-                wrapped_chart.Size = new Size(200, 200);
-
-                for (int i = 0; i < capsule_list.Count; i++)
+                if(Timekeeeper.Experimental.IsRunning)
                 {
-                    this.sources.Add(capsule_list[i]);
-                    Series new_series = new Series(series.Count.ToString()); // set the name of the series to the count
-                    this.series.Add(new_series);
-                    this.wrapped_chart.Series.Add(this.series[this.series.Count - 1]);
-                    currently_showing.Add(new Capsule());
+                    return Data.Experimental.ForceData;
                 }
-
-            }
-
-            // this updates our graph with the most recent data obtained from the capsule.
-            public void Update()
-            {
-                /*  1. Get the recent data from our data sources
-                    2. Set our showing data to include the most recently obtained data
-                    3. Check to see if our showing data exceeds the maximum resolution
-                    4. Set the new axis values
-                    5. Remove the number of points necessary to have the maximum resolution 
-                    6. Add the new points
-                    7. Profit.
-                */
-
-                List<int> exceeded_by = new List<int>();
-                List<Capsule> to_add = new List<Capsule>();
-                double x_axis_minimum = 10e12;
-                double x_axis_maximum = 0;
-                double y_axis_minimum = 10e12;
-                double y_axis_maximum = 0;
-
-
-                for (int i = 0; i < this.sources.Count; i++)
+                else
                 {
-                    exceeded_by.Add(0);
-                    to_add.Add(sources[i].getRecentData());
-                    this.currently_showing[i].addData(to_add[i]); // add the recently obtained data
-
-                    // check and see if this exceeds the number of points we can have exceeds max resolution
-                    if (this.currently_showing[i].Count > this.MaxResolution)
-                    {
-                        exceeded_by[i] = this.MaxResolution - this.currently_showing[i].Count;
-                        this.currently_showing[i].Trim(exceeded_by[i], Capsule.TrimPoint.OLD);
-                    }
-
-                    // now we set our new axes value
-
-
-                    // now we remove the points from each series to achieve the max resolution
-                    for (int x = 0; x < exceeded_by[i]; x++)
-                    {
-                        series[i].Points.RemoveAt(0);
-                    }
-                    // now we set the axes to the minimum/maximum value to our axes
-                    if (this.currently_showing[i].Count > 0)
-                    {
-                        if (this.currently_showing[i].Timestamps[0] <= x_axis_minimum)
-                        {
-                            x_axis_minimum = this.currently_showing[i].Timestamps[0];
-                        }
-
-                        if (this.currently_showing[i].Timestamps[this.currently_showing.Count - 1] >= x_axis_maximum)
-                        {
-                            x_axis_maximum = this.currently_showing[i].Timestamps[this.currently_showing.Count - 1];
-                        }
-
-                        // set our Y axis minimum and maximums
-                        if (this.currently_showing[i].MinimumValue <= y_axis_minimum)
-                        {
-                            y_axis_minimum = this.currently_showing[i].MinimumValue;
-                        }
-
-                        if (this.currently_showing[i].MaximumValue >= y_axis_maximum)
-                        {
-                            y_axis_maximum = this.currently_showing[i].MaximumValue;
-                        }
-                    }
-                }
-
-                // make sure to check our values for validity
-                if (x_axis_minimum > x_axis_maximum)
-                {
-                    x_axis_minimum = x_axis_maximum;
-                }
-                if (y_axis_minimum > y_axis_maximum)
-                {
-                    y_axis_minimum = y_axis_maximum;
-                }
-
-                // now we set our axes
-                this.wrapped_area.AxisX.Minimum = x_axis_minimum;
-                this.wrapped_area.AxisX.Maximum = x_axis_maximum;
-                this.wrapped_area.AxisY.Minimum = y_axis_minimum;
-                this.wrapped_area.AxisY.Maximum = y_axis_maximum;
-
-                // and, finally, we add our points.
-                for (int i = 0; i < to_add.Count; i++)
-                {
-                    for (int x = 0; x < to_add[i].Count; x++)
-                    {
-                        this.series[i].Points.Add(new DataPoint(to_add[i].Timestamps[x], to_add[i].Values[x]));
-                    }
+                    return Comms.Input.Buffer.Contents;
                 }
             }
+        } 
 
-            public Chart wrapped_chart;
-            private ChartArea wrapped_area;
-            private List<Series> series = new List<Series>(); // our list of serieses
-
-            private List<Capsule> sources = new List<Capsule>(); // our list of data sources
-            private List<Capsule> currently_showing = new List<Capsule>(); // our list of currently showing data
-
-            int max_resolution;
-            public int MaxResolution
+        public static List<Capsule> Amplitudes
+        {
+            get
             {
-                get
+                if (Timekeeeper.Experimental.IsRunning)
                 {
-                    return max_resolution;
+                    return Data.Experimental.Amplitudes;
                 }
-                set
+                else
                 {
-                    if (value < 1000 && value > 0)
-                    {
-                        max_resolution = value;
-                    }
+                    return Data.General.Amplitudes;
                 }
             }
-
         }
     }
 }

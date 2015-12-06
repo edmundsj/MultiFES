@@ -29,6 +29,9 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             this.stimulate_button = new System.Windows.Forms.Button();
             this.frequency_trackbar = new System.Windows.Forms.TrackBar();
             this.amplitude_trackbar = new System.Windows.Forms.TrackBar();
@@ -46,7 +49,7 @@
             this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.arduinoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.inputToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.electrodesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.experiment_menu = new System.Windows.Forms.ToolStripMenuItem();
             this.calibrateForceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.rotateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.beginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -76,16 +79,21 @@
             this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem7 = new System.Windows.Forms.ToolStripMenuItem();
+            this.hide_unhide_graphs = new System.Windows.Forms.ToolStripMenuItem();
             this.arduinoToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.uploadCodeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.debug_box = new System.Windows.Forms.TextBox();
             this.time_elapsed = new System.Windows.Forms.Label();
-            this.amplitude_groupbox = new System.Windows.Forms.GroupBox();
-            this.force_groupbox = new System.Windows.Forms.GroupBox();
+            this.force_chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.capsuleBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.amplitude_chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             ((System.ComponentModel.ISupportInitialize)(this.frequency_trackbar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.amplitude_trackbar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mVCBindingSource)).BeginInit();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.force_chart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.capsuleBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.amplitude_chart)).BeginInit();
             this.SuspendLayout();
             // 
             // stimulate_button
@@ -159,11 +167,11 @@
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.debugToolStripMenuItem,
-            this.electrodesToolStripMenuItem,
+            this.experiment_menu,
             this.arduinoToolStripMenuItem1});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1236, 44);
+            this.menuStrip1.Size = new System.Drawing.Size(1320, 44);
             this.menuStrip1.TabIndex = 11;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -212,7 +220,6 @@
             this.debugToolStripMenuItem.Name = "debugToolStripMenuItem";
             this.debugToolStripMenuItem.Size = new System.Drawing.Size(104, 40);
             this.debugToolStripMenuItem.Text = "Debug";
-            this.debugToolStripMenuItem.Click += new System.EventHandler(this.debugToolStripMenuItem_Click);
             // 
             // arduinoToolStripMenuItem
             // 
@@ -228,19 +235,20 @@
             this.inputToolStripMenuItem.Text = "Input";
             this.inputToolStripMenuItem.Click += new System.EventHandler(this.inputToolStripMenuItem_Click);
             // 
-            // electrodesToolStripMenuItem
+            // experiment_menu
             // 
-            this.electrodesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.experiment_menu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.calibrateForceToolStripMenuItem,
             this.rotateToolStripMenuItem,
             this.beginToolStripMenuItem,
             this.typeToolStripMenuItem,
             this.setupToolStripMenuItem,
             this.durationToolStripMenuItem,
-            this.fastStartToolStripMenuItem});
-            this.electrodesToolStripMenuItem.Name = "electrodesToolStripMenuItem";
-            this.electrodesToolStripMenuItem.Size = new System.Drawing.Size(156, 40);
-            this.electrodesToolStripMenuItem.Text = "Experiment";
+            this.fastStartToolStripMenuItem,
+            this.hide_unhide_graphs});
+            this.experiment_menu.Name = "experiment_menu";
+            this.experiment_menu.Size = new System.Drawing.Size(156, 40);
+            this.experiment_menu.Text = "Experiment";
             // 
             // calibrateForceToolStripMenuItem
             // 
@@ -468,6 +476,13 @@
             this.toolStripMenuItem7.Text = "0.1";
             this.toolStripMenuItem7.Click += new System.EventHandler(this.toolStripMenuItem7_Click);
             // 
+            // hide_unhide_graphs
+            // 
+            this.hide_unhide_graphs.Name = "hide_unhide_graphs";
+            this.hide_unhide_graphs.Size = new System.Drawing.Size(314, 40);
+            this.hide_unhide_graphs.Text = "Hide Graphs";
+            this.hide_unhide_graphs.Click += new System.EventHandler(this.hideGraphsToolStripMenuItem_Click);
+            // 
             // arduinoToolStripMenuItem1
             // 
             this.arduinoToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -496,37 +511,49 @@
             // time_elapsed
             // 
             this.time_elapsed.AutoSize = true;
-            this.time_elapsed.Location = new System.Drawing.Point(592, 490);
+            this.time_elapsed.Location = new System.Drawing.Point(600, 524);
             this.time_elapsed.Name = "time_elapsed";
             this.time_elapsed.Size = new System.Drawing.Size(47, 20);
             this.time_elapsed.TabIndex = 13;
             this.time_elapsed.Text = "TIME";
             // 
-            // amplitude_groupbox
+            // force_chart
             // 
-            this.amplitude_groupbox.Location = new System.Drawing.Point(846, 145);
-            this.amplitude_groupbox.Name = "amplitude_groupbox";
-            this.amplitude_groupbox.Padding = new System.Windows.Forms.Padding(15);
-            this.amplitude_groupbox.Size = new System.Drawing.Size(303, 300);
-            this.amplitude_groupbox.TabIndex = 11;
-            this.amplitude_groupbox.TabStop = false;
+            chartArea5.Name = "ChartArea1";
+            this.force_chart.ChartAreas.Add(chartArea5);
+            this.force_chart.Location = new System.Drawing.Point(446, 101);
+            this.force_chart.Name = "force_chart";
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series3.Name = "Series1";
+            series3.XValueMember = "Timestamps";
+            series3.YValueMembers = "Values";
+            this.force_chart.Series.Add(series3);
+            this.force_chart.Size = new System.Drawing.Size(382, 396);
+            this.force_chart.TabIndex = 14;
+            this.force_chart.Text = "chart1";
             // 
-            // force_groupbox
+            // capsuleBindingSource
             // 
-            this.force_groupbox.Location = new System.Drawing.Point(409, 64);
-            this.force_groupbox.Name = "force_groupbox";
-            this.force_groupbox.Padding = new System.Windows.Forms.Padding(15);
-            this.force_groupbox.Size = new System.Drawing.Size(409, 405);
-            this.force_groupbox.TabIndex = 11;
-            this.force_groupbox.TabStop = false;
+            this.capsuleBindingSource.DataSource = typeof(CSharpProject.Data.Capsule);
+            // 
+            // amplitude_chart
+            // 
+            chartArea6.Name = "amplitude_chart_area";
+            this.amplitude_chart.ChartAreas.Add(chartArea6);
+            this.amplitude_chart.Location = new System.Drawing.Point(869, 260);
+            this.amplitude_chart.Name = "amplitude_chart";
+            this.amplitude_chart.Size = new System.Drawing.Size(382, 396);
+            this.amplitude_chart.TabIndex = 15;
+            this.amplitude_chart.Text = "chart1";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1236, 719);
-            this.Controls.Add(this.amplitude_groupbox);
-            this.Controls.Add(this.force_groupbox);
+            this.ClientSize = new System.Drawing.Size(1320, 797);
+            this.Controls.Add(this.amplitude_chart);
+            this.Controls.Add(this.force_chart);
             this.Controls.Add(this.time_elapsed);
             this.Controls.Add(this.debug_box);
             this.Controls.Add(this.array_pad);
@@ -544,6 +571,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.mVCBindingSource)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.force_chart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.capsuleBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.amplitude_chart)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -570,7 +600,7 @@
         private System.Windows.Forms.ToolStripMenuItem dataToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem patternToolStripMenuItem;
         private System.Windows.Forms.BindingSource mVCBindingSource;
-        private System.Windows.Forms.ToolStripMenuItem electrodesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem experiment_menu;
         private System.Windows.Forms.ToolStripMenuItem rotateToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem beginToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem setupToolStripMenuItem;
@@ -602,8 +632,10 @@
         private System.Windows.Forms.ToolStripMenuItem multichannelToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem arduinoToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem uploadCodeToolStripMenuItem;
-        private System.Windows.Forms.GroupBox amplitude_groupbox;
-        private System.Windows.Forms.GroupBox force_groupbox;
+        private System.Windows.Forms.DataVisualization.Charting.Chart force_chart;
+        private System.Windows.Forms.BindingSource capsuleBindingSource;
+        private System.Windows.Forms.ToolStripMenuItem hide_unhide_graphs;
+        private System.Windows.Forms.DataVisualization.Charting.Chart amplitude_chart;
     }
 }
 

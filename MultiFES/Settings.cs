@@ -11,372 +11,328 @@ namespace CSharpProject
         // loads our array settings from XML into the settings class
         public static void loadArray(String filename)
         {
+            filename = Path.Combine(CSV_PATH, filename); // add the CSV path
+            XmlReader xreader = XmlReader.Create(filename);
+            int active_node = 0;
+            Property current_attribute = 0;
+            int temp_x_coor = -1;
+            int temp_y_coor = -1;
+            int temp_width = -1;
+            int temp_height = -1;
+            uint temp_id = 0;
 
-            try
+            while (xreader.Read())
             {
-                filename = Path.Combine(CSV_PATH, filename); // add the CSV path
-                XmlReader xreader = XmlReader.Create(filename);
-                int active_node = 0;
-                Property current_attribute = 0;
-                int temp_x_coor = -1;
-                int temp_y_coor = -1;
-                int temp_width = -1;
-                int temp_height = -1;
-                uint temp_id = 0;
-
-                while (xreader.Read())
+                if (xreader.NodeType == XmlNodeType.Element)
                 {
-                    if (xreader.NodeType == XmlNodeType.Element)
-                    {
-                        if (xreader.Name == "Node")
-                        { // we have begun reading data from a node
-                          // do nothing
-                        }
-                        else if (xreader.Name == "node_id")
-                        {
-                            current_attribute = Property.INDEX;
-                        }
-                        else if (xreader.Name == "x_coordinate")
-                        {
-                            current_attribute = Property.X_COORDINATE;
-                        }
-                        else if (xreader.Name == "y_coordinate")
-                        {
-                            current_attribute = Property.Y_COORDINATE;
-                        }
-                        else if (xreader.Name == "shape")
-                        {
-                            current_attribute = Property.SHAPE;
-                        }
-                        else if (xreader.Name == "width")
-                        {
-                            current_attribute = Property.WIDTH;
-                        }
-                        else if (xreader.Name == "height")
-                        {
-                            current_attribute = Property.HEIGHT;
-                        }
-
+                    if (xreader.Name == "Node")
+                    { // we have begun reading data from a node
+                      // do nothing
                     }
-                    else if (xreader.NodeType == XmlNodeType.Text)
+                    else if (xreader.Name == "node_id")
                     {
-                        switch (current_attribute)
-                        {
-                            case Property.INDEX:
-                                {
-                                    temp_id = System.Convert.ToUInt16(xreader.Value);
-                                    break;
-                                }
-                            case Property.X_COORDINATE:
-                                {
-                                    temp_x_coor = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-                            case Property.Y_COORDINATE:
-                                {
-                                    temp_y_coor = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-                            case Property.WIDTH:
-                                {
-                                    temp_width = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-                            case Property.HEIGHT:
-                                {
-                                    temp_height = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-
-                        }
+                        current_attribute = Property.INDEX;
                     }
-                    else if (xreader.NodeType == XmlNodeType.EndElement)
-                    { // we have reached the end of a node.
-                        if (xreader.Name == "Node")
-                        {
-                            NodeIDs.Add(temp_id);
-                            NodeXCoors.Add(temp_x_coor);
-                            NodeYCoors.Add(temp_y_coor);
-                            Widths.Add(temp_width);
-                            Heights.Add(temp_height);
-                            active_node++;
-                        }
+                    else if (xreader.Name == "x_coordinate")
+                    {
+                        current_attribute = Property.X_COORDINATE;
+                    }
+                    else if (xreader.Name == "y_coordinate")
+                    {
+                        current_attribute = Property.Y_COORDINATE;
+                    }
+                    else if (xreader.Name == "shape")
+                    {
+                        current_attribute = Property.SHAPE;
+                    }
+                    else if (xreader.Name == "width")
+                    {
+                        current_attribute = Property.WIDTH;
+                    }
+                    else if (xreader.Name == "height")
+                    {
+                        current_attribute = Property.HEIGHT;
+                    }
+
+                }
+                else if (xreader.NodeType == XmlNodeType.Text)
+                {
+                    switch (current_attribute)
+                    {
+                        case Property.INDEX:
+                            {
+                                temp_id = System.Convert.ToUInt16(xreader.Value);
+                                break;
+                            }
+                        case Property.X_COORDINATE:
+                            {
+                                temp_x_coor = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+                        case Property.Y_COORDINATE:
+                            {
+                                temp_y_coor = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+                        case Property.WIDTH:
+                            {
+                                temp_width = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+                        case Property.HEIGHT:
+                            {
+                                temp_height = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+
                     }
                 }
-                xreader.Close();
+                else if (xreader.NodeType == XmlNodeType.EndElement)
+                { // we have reached the end of a node.
+                    if (xreader.Name == "Node")
+                    {
+                        NodeIDs.Add(temp_id);
+                        NodeXCoors.Add(temp_x_coor);
+                        NodeYCoors.Add(temp_y_coor);
+                        Widths.Add(temp_width);
+                        Heights.Add(temp_height);
+                        active_node++;
+                    }
+                }
             }
-            catch (FormatException ex) {
-                MessageBox.Show("Undefined Error: loading electrode array XML file. Please ensure the file is properly formatted. \nError: " + ex.Message, "XML Load Error");
-            }
+            xreader.Close();
         }
-
         // loads our load cell data into the settings class
         public static void loadLoadCell(String filename)
         {
-
-            try
+            ProtocolVariable current_property = 0;
+            filename = Path.Combine(XML_PATH, filename);
+            XmlReader xreader = XmlReader.Create(filename);
+            while (xreader.Read())
             {
-                ProtocolVariable current_property = 0;
-                filename = Path.Combine(XML_PATH, filename);
-                XmlReader xreader = XmlReader.Create(filename);
-                while (xreader.Read())
+                if (xreader.NodeType == XmlNodeType.Element)
                 {
-                    if (xreader.NodeType == XmlNodeType.Element)
+                    if (xreader.Name == "voltage")
                     {
-                        if (xreader.Name == "voltage")
-                        {
-                            current_property = ProtocolVariable.VOLTAGE;
-                        }
-                        else if (xreader.Name == "resistance")
-                        {
-                            current_property = ProtocolVariable.RESISTANCE;
-                        }
+                        current_property = ProtocolVariable.VOLTAGE;
                     }
-                    else if (xreader.NodeType == XmlNodeType.Text)
+                    else if (xreader.Name == "resistance")
                     {
-                        switch (current_property)
-                        {
-                            case ProtocolVariable.VOLTAGE:
-                                LoadCellVoltage = Convert.ToUInt32(xreader.Value);
-                                break;
-                            case ProtocolVariable.RESISTANCE:
-                                LoadCellResistance = Convert.ToUInt32(xreader.Value);
-                                break;
-                            default:
-                                XmlException xml_e = new XmlException("In Capsule.Settings.LoadCell.loadLoadCell(): Unable to find protocol variable " +
-                                     System.Convert.ToString(current_property));
-                                throw xml_e;
-                        }
+                        current_property = ProtocolVariable.RESISTANCE;
                     }
                 }
-                xreader.Close();
+                else if (xreader.NodeType == XmlNodeType.Text)
+                {
+                    switch (current_property)
+                    {
+                        case ProtocolVariable.VOLTAGE:
+                            LoadCellVoltage = Convert.ToUInt32(xreader.Value);
+                            break;
+                        case ProtocolVariable.RESISTANCE:
+                            LoadCellResistance = Convert.ToUInt32(xreader.Value);
+                            break;
+                        default:
+                            XmlException xml_e = new XmlException("In Capsule.Settings.LoadCell.loadLoadCell(): Unable to find protocol variable " +
+                                 System.Convert.ToString(current_property));
+                            throw xml_e;
+                    }
+                }
             }
-            catch (FormatException ex) {
-                MessageBox.Show("Error loading load cell XML file. Please ensure the file is properly formatted. \nError: " + ex.Message, "XML Load Error");
-            }
+            xreader.Close();
         }
 
         // loads our microcontroller settings from XML into the settings class
         public static void loadMicrocontroller(String filename)
         {
-
-            try
+            ProtocolVariable current_property = 0;
+            filename = Path.Combine(XML_PATH, filename);
+            XmlReader xreader = XmlReader.Create(filename);
+            while (xreader.Read())
             {
-                ProtocolVariable current_property = 0;
-                filename = Path.Combine(XML_PATH, filename);
-                XmlReader xreader = XmlReader.Create(filename);
-                while (xreader.Read())
+                if (xreader.NodeType == XmlNodeType.Element)
                 {
-                    if (xreader.NodeType == XmlNodeType.Element)
+                    if (xreader.Name == "port_name")
                     {
-                        if (xreader.Name == "port_name")
-                        {
-                            current_property = ProtocolVariable.PORT_NAME;
-                        }
-                        else if (xreader.Name == "baud_rate")
-                        {
-                            current_property = ProtocolVariable.BAUD_RATE;
-                        }
+                        current_property = ProtocolVariable.PORT_NAME;
                     }
-                    else if (xreader.NodeType == XmlNodeType.Text)
+                    else if (xreader.Name == "baud_rate")
                     {
-                        switch (current_property)
-                        {
-                            case ProtocolVariable.PORT_NAME:
-                                PortName = xreader.Value;
-                                break;
-                            case ProtocolVariable.BAUD_RATE:
-                                BaudRate = System.Convert.ToInt16(xreader.Value);
-                                break;
-                            default:
-                                XmlException xml_e = new XmlException("Defined Error: In Capsule.Settings.Microcontroller.loadMicrocontroller(): Unable to find node type " +
-                                     System.Convert.ToString(current_property));
-                                throw xml_e;
-                        }
+                        current_property = ProtocolVariable.BAUD_RATE;
                     }
                 }
-                xreader.Close();
+                else if (xreader.NodeType == XmlNodeType.Text)
+                {
+                    switch (current_property)
+                    {
+                        case ProtocolVariable.PORT_NAME:
+                            PortName = xreader.Value;
+                            break;
+                        case ProtocolVariable.BAUD_RATE:
+                            BaudRate = System.Convert.ToInt16(xreader.Value);
+                            break;
+                        default:
+                            XmlException xml_e = new XmlException("Defined Error: In Capsule.Settings.Microcontroller.loadMicrocontroller(): Unable to find node type " +
+                                 System.Convert.ToString(current_property));
+                            throw xml_e;
+                    }
+                }
             }
-            catch (FormatException form_ex) {
-                MessageBox.Show("Defined Error: loading microcontroller XML file. Please ensure the file is properly formatted. \nError: " + form_ex.Message, "XML Load Error");
-            }
+            xreader.Close();
         }
 
         // loads our stimulation protocol paramaters from XML into the settings class
         public static void loadProtocol(String filename)
         {
-            try
-            {
-                filename = Path.Combine(XML_PATH, filename); // add the XML path
-                XmlReader xreader = XmlReader.Create(filename);
-                ProtocolVariable current_attribute = 0;
+            filename = Path.Combine(XML_PATH, filename); // add the XML path
+            XmlReader xreader = XmlReader.Create(filename);
+            ProtocolVariable current_attribute = 0;
 
-                while (xreader.Read())
-                { // the xreader proceeds one node at a time.
-                    if (xreader.NodeType == XmlNodeType.Element)
+            while (xreader.Read())
+            { // the xreader proceeds one node at a time.
+                if (xreader.NodeType == XmlNodeType.Element)
+                {
+                    if (xreader.Name == "autonomous_stimulation")
                     {
-                        if (xreader.Name == "autonomous_stimulation")
-                        {
-                            current_attribute = ProtocolVariable.AUTONOMOUS_STIMULATION;
-                        }
-                        else if (xreader.Name == "frequency")
-                        {
-                            current_attribute = ProtocolVariable.FREQUENCY;
-                        }
-                        else if (xreader.Name == "nominal_amplitude")
-                        {
-                            current_attribute = ProtocolVariable.NOMINAL_AMPLITUDE;
-                        }
-                        else if (xreader.Name == "maximum_amplitude")
-                        {
-                            current_attribute = ProtocolVariable.MAXIMUM_AMPLITUDE;
-                        }
-                        else if (xreader.Name == "amplitude_ramp_time")
-                        {
-                            current_attribute = ProtocolVariable.AMPLITUDE_RAMP_TIME;
-                        }
-
+                        current_attribute = ProtocolVariable.AUTONOMOUS_STIMULATION;
                     }
-                    else if (xreader.NodeType == XmlNodeType.Text)
+                    else if (xreader.Name == "frequency")
                     {
-                        switch (current_attribute)
-                        {
-                            case ProtocolVariable.AUTONOMOUS_STIMULATION:
-                                {
-                                    if (xreader.Value == "true")
-                                    {
-                                        // autonomous_stimulation = true;
-                                    }
-                                    else if (xreader.Value == "false")
-                                    {
-                                        // autonomous_stimulation = false;
-                                    }
-                                    else
-                                    {
-                                        throw new System.Exception("Defined Error: In Capsule.Settings.Protocol.loadProtocol(): Unable to parse value" +
-                                            xreader.Value + "in case AUTONOMOUS_STIMULATION ");
-                                    }
-                                    break;
-                                }
-
-                            case ProtocolVariable.FREQUENCY:
-                                {
-                                    GlobalFrequency = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-                                
-
-                            case ProtocolVariable.MAXIMUM_AMPLITUDE:
-                                {
-                                    GlobalMaximumAmplitude = System.Convert.ToInt16(xreader.Value);
-                                    break;
-                                }
-
-                            case ProtocolVariable.AMPLITUDE_RAMP_TIME:
-                                {
-                                    GlobalRampTime = System.Convert.ToDouble(xreader.Value);
-                                    break;
-                                }
-
-
-                        }
+                        current_attribute = ProtocolVariable.FREQUENCY;
                     }
-                    else if (xreader.NodeType == XmlNodeType.EndElement)
-                    { // we have reached the end of a node.
-                        if (xreader.Name == "Node")
-                        {
+                    else if (xreader.Name == "nominal_amplitude")
+                    {
+                        current_attribute = ProtocolVariable.NOMINAL_AMPLITUDE;
+                    }
+                    else if (xreader.Name == "maximum_amplitude")
+                    {
+                        current_attribute = ProtocolVariable.MAXIMUM_AMPLITUDE;
+                    }
+                    else if (xreader.Name == "amplitude_ramp_time")
+                    {
+                        current_attribute = ProtocolVariable.AMPLITUDE_RAMP_TIME;
+                    }
 
-                        }
+                }
+                else if (xreader.NodeType == XmlNodeType.Text)
+                {
+                    switch (current_attribute)
+                    {
+                        case ProtocolVariable.AUTONOMOUS_STIMULATION:
+                            {
+                                if (xreader.Value == "true")
+                                {
+                                    // autonomous_stimulation = true;
+                                }
+                                else if (xreader.Value == "false")
+                                {
+                                    // autonomous_stimulation = false;
+                                }
+                                else
+                                {
+                                    throw new System.Exception("Defined Error: In Capsule.Settings.Protocol.loadProtocol(): Unable to parse value" +
+                                        xreader.Value + "in case AUTONOMOUS_STIMULATION ");
+                                }
+                                break;
+                            }
+
+                        case ProtocolVariable.FREQUENCY:
+                            {
+                                GlobalFrequency = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+
+
+                        case ProtocolVariable.MAXIMUM_AMPLITUDE:
+                            {
+                                GlobalMaximumAmplitude = System.Convert.ToInt16(xreader.Value);
+                                break;
+                            }
+
+                        case ProtocolVariable.AMPLITUDE_RAMP_TIME:
+                            {
+                                GlobalRampTime = System.Convert.ToDouble(xreader.Value);
+                                break;
+                            }
+
+
                     }
                 }
-                xreader.Close();
+                else if (xreader.NodeType == XmlNodeType.EndElement)
+                { // we have reached the end of a node.
+                    if (xreader.Name == "Node")
+                    {
+
+                    }
+                }
             }
-            catch (FormatException form_ex)
-            {
-                MessageBox.Show("Undefined Error: Problem loading protocol XML file. Please ensure the file is properly formatted. \nError: " + form_ex.Message, "XML Load Error");
-            }
+            xreader.Close();
         }
 
         // load our complete set of settigs from XML.
         public static void loadSettings(String filename)
         {
-            try
+            filename = Path.Combine(XML_PATH, filename);
+            filename += ".xml";
+            XmlReader xreader = XmlReader.Create(filename);
+            SettingsFiles file_type = SettingsFiles.PROTOCOL_FILE; // arbitrary choice
+
+            while (xreader.Read())
             {
-                filename = Path.Combine(XML_PATH, filename);
-                filename += ".xml";
-                XmlReader xreader = XmlReader.Create(filename);
-                SettingsFiles file_type = SettingsFiles.PROTOCOL_FILE; // arbitrary choice
-
-                while (xreader.Read())
+                if (xreader.NodeType == XmlNodeType.Element)
                 {
-                    if (xreader.NodeType == XmlNodeType.Element)
+                    if (xreader.Name == "defaults")
                     {
-                        if (xreader.Name == "defaults")
-                        {
-                            // do nothing, we are at the root node
-                        }
-                        else if (xreader.Name == "protocol_file")
-                        {
-                            file_type = SettingsFiles.PROTOCOL_FILE;
-                        }
-                        else if (xreader.Name == "electrode_array_file")
-                        {
-                            file_type = SettingsFiles.ELECTRODE_ARRAY_FILE;
-                        }
-                        else if (xreader.Name == "microcontroller_file")
-                        {
-                            file_type = SettingsFiles.MICROCONTROLLER_FILE;
-                        }
-                        else if (xreader.Name == "load_cell_file")
-                        {
-                            file_type = SettingsFiles.LOAD_CELL_FILE;
-                        }
-                        else if (xreader.Name == "data_directory")
-                        {
-                            file_type = SettingsFiles.DATA_DIRECTORY;
-                        }
-                        else
-                        {
-                            throw new XmlException("Defined Error: Base Settings file appears to have an improper node." + Convert.ToString(file_type));
-                        }
+                        // do nothing, we are at the root node
                     }
-                    else if (xreader.NodeType == XmlNodeType.Text)
+                    else if (xreader.Name == "protocol_file")
                     {
-                        switch (file_type)
-                        {
-                            case SettingsFiles.PROTOCOL_FILE:
-                                loadProtocol(Path.Combine(XML_PATH, xreader.Value));
-                                break;
-                            case SettingsFiles.ELECTRODE_ARRAY_FILE:
-                                loadArray(Path.Combine(XML_PATH, xreader.Value));
-                                break;
-                            case SettingsFiles.MICROCONTROLLER_FILE:
-                                loadMicrocontroller(Path.Combine(XML_PATH, xreader.Value));
-                                break;
-                            case SettingsFiles.LOAD_CELL_FILE:
-                                loadLoadCell(Path.Combine(XML_PATH, xreader.Value));
-                                break;
-                            default:
-                                XmlException xml_ex = new XmlException("Defined Error: Unable to identify node type in settings file.");
-                                throw xml_ex;
-                        }
-
+                        file_type = SettingsFiles.PROTOCOL_FILE;
+                    }
+                    else if (xreader.Name == "electrode_array_file")
+                    {
+                        file_type = SettingsFiles.ELECTRODE_ARRAY_FILE;
+                    }
+                    else if (xreader.Name == "microcontroller_file")
+                    {
+                        file_type = SettingsFiles.MICROCONTROLLER_FILE;
+                    }
+                    else if (xreader.Name == "load_cell_file")
+                    {
+                        file_type = SettingsFiles.LOAD_CELL_FILE;
+                    }
+                    else if (xreader.Name == "data_directory")
+                    {
+                        file_type = SettingsFiles.DATA_DIRECTORY;
+                    }
+                    else
+                    {
+                        throw new XmlException("Defined Error: Base Settings file appears to have an improper node." + Convert.ToString(file_type));
                     }
                 }
-                xreader.Close();
+                else if (xreader.NodeType == XmlNodeType.Text)
+                {
+                    switch (file_type)
+                    {
+                        case SettingsFiles.PROTOCOL_FILE:
+                            loadProtocol(Path.Combine(XML_PATH, xreader.Value));
+                            break;
+                        case SettingsFiles.ELECTRODE_ARRAY_FILE:
+                            loadArray(Path.Combine(XML_PATH, xreader.Value));
+                            break;
+                        case SettingsFiles.MICROCONTROLLER_FILE:
+                            loadMicrocontroller(Path.Combine(XML_PATH, xreader.Value));
+                            break;
+                        case SettingsFiles.LOAD_CELL_FILE:
+                            loadLoadCell(Path.Combine(XML_PATH, xreader.Value));
+                            break;
+                        default:
+                            XmlException xml_ex = new XmlException("Defined Error: Unable to identify node type in settings file.");
+                            throw xml_ex;
+                    }
+
+                }
             }
-            catch (XmlException xml_ex)
-            {
-                MessageBox.Show(xml_ex.Message);
-            }
-            catch (System.IO.DirectoryNotFoundException dir_ex)
-            {
-                MessageBox.Show(dir_ex.Message);
-            }
-            catch (FileNotFoundException file_ex)
-            {
-                MessageBox.Show("Undefined Error: " + file_ex.Message);
-            }
+            xreader.Close();
         }
 
         // load our default settings.

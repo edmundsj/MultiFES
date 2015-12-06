@@ -41,14 +41,14 @@ namespace CSharpProject
             public static void Start()
             {
                 watch.Start();
-                Running = true;
+                IsRunning = true;
             }
 
             // stops our stopwatch
             public static void Stop()
             {
                 watch.Stop();
-                Running = false;
+                IsRunning = false;
             }
 
             // resets our stopwatch
@@ -57,12 +57,16 @@ namespace CSharpProject
                 watch.Reset();
             }
 
-            public static bool Running { get; set; }
+            public static bool IsRunning { get; set; }
             public static double ElapsedSeconds
             {
                 get
                 {
-                    return watch.ElapsedMilliseconds / 1000.0;
+                    if (watch.IsRunning)
+                    {
+                        return watch.ElapsedMilliseconds / 1000.0;
+                    }
+                    else return 0.0;
                 }
             }
 
@@ -75,14 +79,14 @@ namespace CSharpProject
             public static void Start()
             {
                 watch.Start();
-                Running = true;
+                IsRunning = true;
             }
 
             // stops our stopwatch
             public static void Stop()
             {
                 watch.Stop();
-                Running = false;
+                IsRunning = false;
             }
 
             // resets our stopwatch
@@ -91,12 +95,16 @@ namespace CSharpProject
                 watch.Reset();
             }
 
-            public static bool Running { get; set; }
+            public static bool IsRunning { get; set; }
             public static double ElapsedSeconds
             {
                 get
                 {
-                    return watch.ElapsedMilliseconds / 1000.0;
+                    if (watch.IsRunning)
+                    {
+                        return watch.ElapsedMilliseconds / 1000.0;
+                    }
+                    else return 0.0;
                 }
             }
 
@@ -107,11 +115,11 @@ namespace CSharpProject
         {
             get
             {
-                if (Timekeeeper.Experimental.Running)
+                if (Timekeeeper.Experimental.IsRunning)
                 {
                     return Timekeeeper.Experimental.ElapsedSeconds;
                 }
-                else if (Timekeeeper.Experimental.Running == false && Timekeeeper.General.Running == true)
+                else if (Timekeeeper.Experimental.IsRunning == false && Timekeeeper.General.IsRunning == true)
                 {
                     return Timekeeeper.General.ElapsedSeconds;
                 }
@@ -126,7 +134,7 @@ namespace CSharpProject
         {
             get
             {
-                if (Timekeeeper.General.Running || Timekeeeper.Experimental.Running)
+                if (Timekeeeper.General.IsRunning || Timekeeeper.Experimental.IsRunning)
                 {
                     return true;
                 }

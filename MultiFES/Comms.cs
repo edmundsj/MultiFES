@@ -37,26 +37,47 @@ namespace CSharpProject
             }
         }
 
-        public static void Open() // this opens our communication with the arduino by opening the port
+        public static bool Open() // this opens our communication with the arduino by opening the port
         {
-            Initialize();
-            Empty();
-            Comms.arduino_mega.openPort();
-            Comms.comm_timer.Enabled = true;
-            Comms.comm_timer.Start();
+            try {
+                Initialize();
+                Empty();
+                if (arduino_mega.IsOpen == false)
+                {
+                    Comms.arduino_mega.openPort();
+                }
+                Comms.comm_timer.Enabled = true;
+                Comms.comm_timer.Start();
+                return true;
+            } catch(Exception base_exception)
+            {
+                MessageBox.Show("Unable to open communication with the Arduino. Please ensure it is " + 
+                   "properly plugged in. " + base_exception.Message, "Arduino Error", MessageBoxButtons.OK, 
+                   MessageBoxIcon.Exclamation);
+                return false;
+            }
         }
 
-        public static void Close() // this closes communication with the arduino
+        public static bool Close() // this closes communication with the arduino
         {
-            if(arduino_mega.IsOpen == false)
-            {
-                arduino_mega.openPort();
-            }
-            
-            arduino_mega.sendAbortSignal();
-            arduino_mega.closePort();
-            Nodes.setAllZero(); // I would prefer not to have this here, but I'll live for now...
+            try {
+                if (arduino_mega.IsOpen == false)
+                {
+                    arduino_mega.openPort();
+                }
 
+                arduino_mega.sendAbortSignal();
+                arduino_mega.closePort();
+                Nodes.setAllZero(); // I would prefer not to have this here, but I'll live for now...
+                return true;
+            }
+            catch(System.IO.IOException io_ex)
+            {
+                MessageBox.Show("Unable to close communication with the Arduino. Please ensure it is " +
+                   "properly plugged in. " + io_ex.Message, "Arduino Error", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+                return false;
+            }
         }
 
         public static void Send(byte[] data)
@@ -182,7 +203,7 @@ namespace CSharpProject
                     Contents.addData(Timekeeeper.ElapsedSeconds, result);
 
                     // also, if we are running an experiment, add the data to the experimental data
-                    if(Timekeeeper.Experimental.Running)
+                    if(Timekeeeper.Experimental.IsRunning)
                     {
                         Data.Experimental.ForceData.addData(Timekeeeper.ElapsedSeconds, result);
                     }
@@ -194,40 +215,7 @@ namespace CSharpProject
                     Contents.Clear();
                 }
                 
-                public static void writeToFile(String filename)
-                {
-
-                    DateTime t = DateTime.Now;
-                    String filename_ending = filename;
-                    filename_ending += "_";
-                    filename_ending += t.Month.ToString() + "-";
-                    filename_ending += (t.Day.ToString()) + "_";
-                    filename_ending += t.Hour.ToString() + "_";
-                    filename_ending += t.Minute.ToString() + ".csv";
-
-                    filename = Path.Combine(Settings.CSV_PATH, filename_ending);
-
-                    String d = "";
-                    for (int i = 0; i < Contents.Timestamps.Count; i++)
-                    {
-                        d += Convert.ToString(Contents.Timestamps[i]) + ",";
-                        if (Contents.Count >= i)
-                        {
-                            d += Convert.ToString(Contents.Values[i]) + "\n";
-                        }
-                    }
-                    try
-                    {
-                        StreamWriter sw = new StreamWriter(filename);
-                        sw.Write(d);
-                        sw.Close();
-                    }
-                    catch (IOException ex)
-                    {
-                        MessageBox.Show("Undefined Exception, writeToFile(): The file we tried to write to appears to be in use.\nError Code: " +
-                            ex.Message, "File Writing Error");
-                    }
-                }
+                
                 public static Data.Capsule Contents { get; set; } = new Data.Capsule();
                 public static List<String> Inputs { get; set; } = new List<String>();
             }
@@ -308,87 +296,59 @@ namespace CSharpProject
                 }
                 return "";
             }
-            
+
 
             // initializes our arduino port for use, including adding our event handler.
             public void initializePort()
             {
-                try {
-                    if (this.port == null)
-                    {
-                        this.port = new SerialPort(Comms.PortName, Comms.BaudRate);
-                        this.port.DataReceived += new SerialDataReceivedEventHandler(Comms.Input.dataReceived);
-                    }
-                    else
-                    {
-                        throw new IOException("Defined Error: Port has already been initialized. Try destroying the port first. ");
-                    }
-                }
-                catch(IOException io_e)
+                if (this.port == null)
                 {
-                    MessageBox.Show(io_e.Message);
+                    this.port = new SerialPort(Comms.PortName, Comms.BaudRate);
+                    this.port.DataReceived += new SerialDataReceivedEventHandler(Comms.Input.dataReceived);
                 }
+                else
+                {
+                    throw new IOException("Defined Error: Port has already been initialized. Try destroying the port first. ");
+                }
+
             }
 
 
             // destroys the arduino port.
             public void destroyPort()
             {
-                try {
-                    if (this.IsOpen == true)
-                    {
-                        throw new IOException("Defined Error: Please close the port before destroying. ");
-                    }
-                    this.port = null;
-                }
-                catch(IOException io_e)
+                if (this.IsOpen == true)
                 {
-                    MessageBox.Show(io_e.Message);
+                    throw new IOException("Defined Error: Please close the port before destroying. ");
                 }
+                this.port = null;
             }
 
             // opens the arduino port. This is the base function implement
             public void openPort()
             {
-                try
+                if (this == null)
                 {
-                    if (this == null)
-                    {
-                        throw new System.IO.IOException("Error: Port has not been initialized. ");
-                    }
-                    if (this.IsOpen == false) // only open the port if it is not already open.
-                    {
-                        this.port.Open();
-                    }
+                    throw new System.IO.IOException("Error: Port has not been initialized. ");
                 }
-
-                catch (IOException io_e) // check and see if we properly initialized our port
+                if (this.IsOpen == false) // only open the port if it is not already open.
                 {
-                    MessageBox.Show(io_e.Message);
+                    this.port.Open();
                 }
             }
 
             // closes the arduino port
             public void closePort()
             {
-                try
+                if (this == null)
                 {
-                    if(this == null)
-                    {
-                        throw new IOException("Defined Error: Port has not been initialized. ");
-                    }
-
-                    if(this.IsOpen == true)
-                    {
-                        this.port.Close();
-                    }
-                }
-                catch(IOException io_e)
-                {
-                    MessageBox.Show(io_e.Message);
+                    throw new IOException("Defined Error: Port has not been initialized. ");
                 }
 
-
+                if (this.IsOpen == true)
+                {
+                    this.port.Close();
+                }
             }
             
             public void sendAbortSignal()
@@ -403,18 +363,12 @@ namespace CSharpProject
                 this.closePort();
             }
             
-            // this sends the raw data (only two bytes)
+            // this sends the raw data, and is the base data sending function for the arduino.
             public void sendRawData(byte[] byte_arr)
             {
-                try
-                {
-                    this.port.Write(byte_arr, 0, byte_arr.Length);
-                }
-                catch (IOException io_ex)
-                {
-                    MessageBox.Show("Please try connecting the Arduino " + io_ex.Message);
-                }
+                this.port.Write(byte_arr, 0, byte_arr.Length);
             }
+
             public bool IsOpen
             {
                 get

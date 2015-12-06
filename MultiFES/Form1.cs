@@ -16,11 +16,7 @@ namespace CSharpProject
 {
     public partial class Form1 : Form
     {
-
-        // now we create our graphs
-        Data.Graph force_graph = new Data.Graph(Comms.Input.Buffer.Contents);
-        Data.Graph amplitude_graph;
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -37,10 +33,11 @@ namespace CSharpProject
             initializeArray();                                // create our Nodes pad on the UI with all the buttons.
             updateUI();
             Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
+            force_chart.DataSource = Data.Experimental.ForceData;
+            amplitude_chart.DataSource = Data.Experimental.Amplitudes;
             //force_groupbox.Controls.Add(force_graph.wrapped_chart);
             // amplitude_groupbox.Controls.Add(amplitude_graph.wrapped_chart);
-
-            Data.Capsule main_mvc_capsule = new Data.Capsule();
+            
 
 
             // so in the "background", or asynchronously, we need to recieve MVC data from the arduino
@@ -65,9 +62,16 @@ namespace CSharpProject
 
                 // now we create our data variables
                 Data.Experimental.Amplitudes.Add(new Data.Capsule());
+                Data.General.Amplitudes.Add(new Data.Capsule());
 
+                // here we add some series data to the amplitude chart
+                /*
+                Series new_series = new Series(i.ToString());
+                new_series.XValueMember = "[" + i.ToString() + "].Timestamps";
+                new_series.YValueMembers = "[" + i.ToString() + "].Values";
+                amplitude_chart.Series.Add(new_series);
+                */ // not sure how to do this at this point in time... 
             }
-            amplitude_graph = new Data.Graph(Data.Experimental.Amplitudes);
 
         }
 
@@ -88,7 +92,11 @@ namespace CSharpProject
         // base MVC capsule.
         private void updateUI()
         {
-
+            if (Timekeeeper.IsRunning)
+            {
+                force_chart.Series[0].Points.DataBindXY(Data.ForceData.Timestamps,
+                    Data.ForceData.Values);
+            }
             updatePadUI();
             //force_graph.Update();
 
@@ -133,38 +141,23 @@ namespace CSharpProject
             // if the user clicks "STIMULATE"
             if (stimulate_button.Text == "STIMULATE")
             {
-                try
+                if (Comms.Open() == true)
                 {
-                    Comms.Open();
                     Timekeeeper.General.Start();
                     stimulate_button.Text = "ABORT";
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Defined Error, stimulate_button_Click(): There was a problem when trying to begin stimulation."
-                        + ex.Message);
                 }
             }
             // if the user clicks "ABORT"
             else
             {
-                try
-                {
-                    Nodes.setAllZero();
-                    Comms.Close();
+                Comms.Close();
 
-                    stimulate_button.Text = "STIMULATE";
-                    
-                    // reset our timekeepers
-                    Timekeeeper.Stop();
-                    Timekeeeper.Reset();
+                stimulate_button.Text = "STIMULATE";
 
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Defined Error, stimulate_button_Click(): There was a problem when trying to begin stimulation."
-                        + ex.Message);
-                }
+                // reset our timekeepers
+                Timekeeeper.Stop();
+                Timekeeeper.Reset();
+
             }
             // then we set the button's text to the opposite of what it was
         }
@@ -187,13 +180,7 @@ namespace CSharpProject
             }
 
         }
-
-        // allows for debugging of our program
-        private void debugToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
+        
 
         // debugs the Arduino Output by pasting it all to the screen first
         private void arduinoToolStripMenuItem_Click(object sender, EventArgs e)
@@ -233,12 +220,12 @@ namespace CSharpProject
             if (save_file_dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 // NOTE: DATA.EXPERIMENTAL.FORCEDATA WILL ONLY HAVE DATA IF YOU ARE RUNNING AN EXPERIMENT (duh)
-                Data.Experimental.ForceData.writeToFile(save_file_dialog.FileName + "_mvc-data_");  // write the file
+                Data.ForceData.writeToFile(save_file_dialog.FileName + "_mvc-data_");  // write the file
 
                 // write our amplitude data to file.
-                for (int i = 0; i < Data.Experimental.Amplitudes.Count; i++)
+                for (int i = 0; i < Data.Amplitudes.Count; i++)
                 {
-                    Data.Experimental.Amplitudes[i].writeToFile(save_file_dialog.FileName + "CH-"
+                    Data.Amplitudes[i].writeToFile(save_file_dialog.FileName + "CH-"
                         + i.ToString() + "_amplitude-data_");
                 }
                 Comms.Input.Buffer.Clear(); // make sure our program doesn't crash.
@@ -246,11 +233,13 @@ namespace CSharpProject
             }
         }
 
+        // this forcibly rotates our electrodes. It can only be called if the system is running.
         private void rotateToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // theoreticall, this should do stuff in the backgronud.
-            Timekeeeper.Experimental.Start();
-            ThreadPool.QueueUserWorkItem(new WaitCallback(Nodes.rotateNodesAsync));
+            if (Timekeeeper.IsRunning)
+            {
+                ThreadPool.QueueUserWorkItem(new WaitCallback(Nodes.rotateNodesAsync));
+            }
         }
 
         // set interval to 5s
@@ -317,19 +306,23 @@ namespace CSharpProject
         // begins the experiment.
         private void beginToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // first we need to set all amplitudes that aren't the selected node to zero, and that to max.
-            Data.Experimental.Clear();
-            Nodes.setAllZero();
+            // begin the experiment by opening the communications port
+            if (Comms.Open() == true) // if we successfully connect to the arduino
+            {
+                // first we need to set all amplitudes that aren't the selected node to zero, and that to max.
+                Data.Experimental.Clear();
+                Nodes.setAllZero();
 
-            // also change our stimulate button so it reads abort
-            stimulate_button.Text = "ABORT";
+                // also change our stimulate button so it reads abort
+                stimulate_button.Text = "ABORT";
 
-            // set our selected node to the maximum amplitude
-            
-            Nodes.SelectedNode.Amplitude = Nodes.SelectedNode.MaximumAmplitude;
-            
-            Timekeeeper.Experimental.Reset();
-            Timekeeeper.Experimental.Start();
+                // set our selected node to the maximum amplitude
+
+                Nodes.SelectedNode.Amplitude = Nodes.SelectedNode.MaximumAmplitude;
+
+                Timekeeeper.Experimental.Reset();
+                Timekeeeper.Experimental.Start();
+            }
         }
 
 
@@ -416,20 +409,13 @@ namespace CSharpProject
         // this uploads our arduino code.
         private void uploadCodeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            try
+            if (Comms.Close()) // if we can successfully close the port
             {
-                byte[] my_arr = System.IO.File.ReadAllBytes(Settings.ARDUINO_PATH + "\\binary_code.mega.hex");
-
                 var proc = new Process();
-                // this is the command that works that we want to execute
-                // avrdude -C./avrdude.conf -cwiring -PCOM3 -patmega2560 -b115200 -D -Uflash:w:../binary_code.mega.hex:i
-                // with fully qualified filenames
-                // avrdude "-CC:/Users/Xerxes/Google Drive/BCI_Implant_Group/FES/code/GUI/CSharpProject/CSharpProject/Arduino/avrdude/avrdude.conf" -cwiring -PCOM3 -patmega2560 -b115200 -D -Uflash:w:"C:/Users/Xerxes/Google Drive/BCI_Implant_Group/FES/code/GUI/CSharpProject/CSharpProject/Arduino/binary_code.mega.hex:i"
-                // THIS works: 
-                //avrdude "-CC:/Users/Xerxes/Google Drive/BCI_Implant_Group/FES/code/GUI/CSharpProject/CSharpProject/Arduino/avrdude/avrdude.conf" -cwiring -PCOM3 -patmega2560 -b115200 -D -Uflash:w:"C:/Users/Xerxes/Google Drive/BCI_Implant_Group/FES/code/GUI/CSharpProject/CSharpProject/Arduino/binary_code.mega.hex:i"
                 proc.StartInfo.FileName = Settings.AVRDUDE_PATH + "avrdude.exe";
-                proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH +
-                    "avrdude.conf\" -cwiring -P" + Comms.PortName + " -patmega2560 -b115200 -D -Uflash:w:\"" + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
+                proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH
+                    + "avrdude.conf\" -cwiring -P" + Comms.PortName + " -patmega2560 -b115200 -D -Uflash:w:\""
+                    + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
                 //proc.StartInfo.CreateNoWindow = true;
                 //proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
@@ -437,12 +423,39 @@ namespace CSharpProject
                 proc.WaitForExit();
                 var exitCode = proc.ExitCode;
                 proc.Close();
+                if (exitCode == 0)
+                {
+                    MessageBox.Show("Uploaded Code Successfully!");
+                }
+                else
+                {
+                    MessageBox.Show("There was a problem uploading the code.");
+                }
+            }
+        }
 
-            }
-            catch (System.IO.IOException io_ex)
+        // this binds some data to our graph
+        private void graphToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        // hides or unhides the graphs so our user cannot see them.
+        private void hideGraphsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (this.force_chart.Visible == true)
             {
-                MessageBox.Show("The arduino binary files appear to have been moved. Please move them back. " + io_ex.Message);
+                hide_unhide_graphs.Text = "Unhide Graphs";
+                this.force_chart.Visible = false;
+                this.amplitude_chart.Visible = false;
             }
+            else {
+                hide_unhide_graphs.Text = "Hide Graphs";
+                this.force_chart.Visible = true;
+                this.amplitude_chart.Visible = true;
+            }
+
+            
         }
     }
 }
