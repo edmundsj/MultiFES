@@ -195,17 +195,44 @@ namespace CSharpProject
         }
 
         /// <summary>
+        /// This enables our comm_timer so as to allow queued commands to be executed.
+        /// </summary>
+        public static void Enable()
+        {
+            comm_timer.Enabled = true;
+        }
+
+        /// <summary>
+        /// This disables our comm_timer so as to prevent any queued commands from being executed.
+        /// </summary>
+        public static void Disable()
+        {
+            comm_timer.Enabled = false;
+        }
+
+        /// <summary>
         /// This sends the abort signal to the FES board.
         /// </summary>
         /// <returns>True if successfully sent, false if otherwise.</returns>
         public static bool Abort()
         {
-            if (Comms.Send(new Command(Command.CommandType.EMERGENCY_OFF)) == true)
+            if (Comms.IsOpen == false)
             {
-                Nodes.setAllZero();
-                return true;
+                Comms.Open();
+                
+            }
+
+            Comms.Disable(); // disables the comm_timer to prevent further command execution
+            Comms.Empty(); // empties out the buffer to stop any running command execution
+            Thread.Sleep(6); // gives the arduino time to process any command we just sent to it.
+
+            if (Comms.Send(new Command(Command.CommandType.EMERGENCY_OFF)) == true) // send abort signal
+            {
+                Nodes.setAllZero(); // set all our local variables to 0
+                return true; // success.
             }
             return false;
+
         }
 
         /// <summary>
@@ -644,7 +671,20 @@ namespace CSharpProject
         /// The timer used to send communication in real-time to the arduino.
         /// </summary>
         static System.Timers.Timer comm_timer = new System.Timers.Timer();
-
+        public static bool IsOpen
+        {
+            get
+            {
+                if(Comms.ports[active_port].IsOpen == true)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
     }
     
 }
