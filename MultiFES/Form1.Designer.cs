@@ -29,9 +29,9 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             this.stimulate_button = new System.Windows.Forms.Button();
             this.frequency_trackbar = new System.Windows.Forms.TrackBar();
             this.amplitude_trackbar = new System.Windows.Forms.TrackBar();
@@ -45,7 +45,9 @@
             this.loadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.patternToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.connectToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.uploadCodeToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.arduinoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.experiment_menu = new System.Windows.Forms.ToolStripMenuItem();
@@ -79,14 +81,11 @@
             this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem7 = new System.Windows.Forms.ToolStripMenuItem();
             this.hide_unhide_graphs = new System.Windows.Forms.ToolStripMenuItem();
-            this.arduinoToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-            this.uploadCodeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.debug_box = new System.Windows.Forms.TextBox();
             this.time_elapsed = new System.Windows.Forms.Label();
             this.force_chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.capsuleBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.amplitude_chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.frequency_trackbar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.amplitude_trackbar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mVCBindingSource)).BeginInit();
@@ -148,7 +147,6 @@
             // 
             // ui_timer
             // 
-            this.ui_timer.Enabled = false;
             this.ui_timer.Interval = 50;
             this.ui_timer.Tick += new System.EventHandler(this.ui_timer_Tick);
             // 
@@ -167,8 +165,7 @@
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.debugToolStripMenuItem,
-            this.experiment_menu,
-            this.arduinoToolStripMenuItem1});
+            this.experiment_menu});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(1320, 44);
@@ -188,30 +185,46 @@
             // loadToolStripMenuItem
             // 
             this.loadToolStripMenuItem.Name = "loadToolStripMenuItem";
-            this.loadToolStripMenuItem.Size = new System.Drawing.Size(158, 40);
+            this.loadToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
             this.loadToolStripMenuItem.Text = "Load";
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.dataToolStripMenuItem,
-            this.patternToolStripMenuItem});
+            this.dataToolStripMenuItem});
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(158, 40);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
             this.saveToolStripMenuItem.Text = "Save";
             // 
             // dataToolStripMenuItem
             // 
             this.dataToolStripMenuItem.Name = "dataToolStripMenuItem";
-            this.dataToolStripMenuItem.Size = new System.Drawing.Size(186, 40);
+            this.dataToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
             this.dataToolStripMenuItem.Text = "Data";
             this.dataToolStripMenuItem.Click += new System.EventHandler(this.dataToolStripMenuItem_Click);
             // 
-            // patternToolStripMenuItem
+            // connectToolStripMenuItem
             // 
-            this.patternToolStripMenuItem.Name = "patternToolStripMenuItem";
-            this.patternToolStripMenuItem.Size = new System.Drawing.Size(186, 40);
-            this.patternToolStripMenuItem.Text = "Pattern";
+            this.connectToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.connectToolStripMenuItem1,
+            this.uploadCodeToolStripMenuItem1});
+            this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
+            this.connectToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
+            this.connectToolStripMenuItem.Text = "Arduino";
+            // 
+            // connectToolStripMenuItem1
+            // 
+            this.connectToolStripMenuItem1.Name = "connectToolStripMenuItem1";
+            this.connectToolStripMenuItem1.Size = new System.Drawing.Size(252, 40);
+            this.connectToolStripMenuItem1.Text = "Connect";
+            this.connectToolStripMenuItem1.Click += new System.EventHandler(this.connectToolStripMenuItem1_Click);
+            // 
+            // uploadCodeToolStripMenuItem1
+            // 
+            this.uploadCodeToolStripMenuItem1.Name = "uploadCodeToolStripMenuItem1";
+            this.uploadCodeToolStripMenuItem1.Size = new System.Drawing.Size(252, 40);
+            this.uploadCodeToolStripMenuItem1.Text = "Upload Code";
+            this.uploadCodeToolStripMenuItem1.Click += new System.EventHandler(this.uploadCodeToolStripMenuItem1_Click);
             // 
             // debugToolStripMenuItem
             // 
@@ -224,7 +237,7 @@
             // arduinoToolStripMenuItem
             // 
             this.arduinoToolStripMenuItem.Name = "arduinoToolStripMenuItem";
-            this.arduinoToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
+            this.arduinoToolStripMenuItem.Size = new System.Drawing.Size(186, 40);
             this.arduinoToolStripMenuItem.Text = "Output";
             this.arduinoToolStripMenuItem.Click += new System.EventHandler(this.arduinoToolStripMenuItem_Click);
             // 
@@ -476,21 +489,6 @@
             this.hide_unhide_graphs.Text = "Hide Graphs";
             this.hide_unhide_graphs.Click += new System.EventHandler(this.hideGraphsToolStripMenuItem_Click);
             // 
-            // arduinoToolStripMenuItem1
-            // 
-            this.arduinoToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.uploadCodeToolStripMenuItem});
-            this.arduinoToolStripMenuItem1.Name = "arduinoToolStripMenuItem1";
-            this.arduinoToolStripMenuItem1.Size = new System.Drawing.Size(119, 40);
-            this.arduinoToolStripMenuItem1.Text = "Arduino";
-            // 
-            // uploadCodeToolStripMenuItem
-            // 
-            this.uploadCodeToolStripMenuItem.Name = "uploadCodeToolStripMenuItem";
-            this.uploadCodeToolStripMenuItem.Size = new System.Drawing.Size(252, 40);
-            this.uploadCodeToolStripMenuItem.Text = "Upload Code";
-            this.uploadCodeToolStripMenuItem.Click += new System.EventHandler(this.uploadCodeToolStripMenuItem_Click);
-            // 
             // debug_box
             // 
             this.debug_box.Location = new System.Drawing.Point(869, 101);
@@ -512,16 +510,16 @@
             // 
             // force_chart
             // 
-            chartArea3.Name = "ChartArea1";
-            this.force_chart.ChartAreas.Add(chartArea3);
+            chartArea1.Name = "ChartArea1";
+            this.force_chart.ChartAreas.Add(chartArea1);
             this.force_chart.Location = new System.Drawing.Point(446, 101);
             this.force_chart.Name = "force_chart";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
-            series2.Name = "Series1";
-            series2.XValueMember = "Timestamps";
-            series2.YValueMembers = "Values";
-            this.force_chart.Series.Add(series2);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series1.Name = "Series1";
+            series1.XValueMember = "Timestamps";
+            series1.YValueMembers = "Values";
+            this.force_chart.Series.Add(series1);
             this.force_chart.Size = new System.Drawing.Size(382, 396);
             this.force_chart.TabIndex = 14;
             this.force_chart.Text = "chart1";
@@ -532,20 +530,13 @@
             // 
             // amplitude_chart
             // 
-            chartArea4.Name = "amplitude_chart_area";
-            this.amplitude_chart.ChartAreas.Add(chartArea4);
+            chartArea2.Name = "amplitude_chart_area";
+            this.amplitude_chart.ChartAreas.Add(chartArea2);
             this.amplitude_chart.Location = new System.Drawing.Point(869, 260);
             this.amplitude_chart.Name = "amplitude_chart";
             this.amplitude_chart.Size = new System.Drawing.Size(382, 396);
             this.amplitude_chart.TabIndex = 15;
             this.amplitude_chart.Text = "chart1";
-            // 
-            // connectToolStripMenuItem
-            // 
-            this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
-            this.connectToolStripMenuItem.Size = new System.Drawing.Size(211, 40);
-            this.connectToolStripMenuItem.Text = "Connect";
-            this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -597,7 +588,6 @@
         private System.Windows.Forms.ToolStripMenuItem loadToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem dataToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem patternToolStripMenuItem;
         private System.Windows.Forms.BindingSource mVCBindingSource;
         private System.Windows.Forms.ToolStripMenuItem experiment_menu;
         private System.Windows.Forms.ToolStripMenuItem rotateToolStripMenuItem;
@@ -629,13 +619,13 @@
         private System.Windows.Forms.ToolStripMenuItem typeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem singlechannelToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem multichannelToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem arduinoToolStripMenuItem1;
-        private System.Windows.Forms.ToolStripMenuItem uploadCodeToolStripMenuItem;
         private System.Windows.Forms.DataVisualization.Charting.Chart force_chart;
         private System.Windows.Forms.BindingSource capsuleBindingSource;
         private System.Windows.Forms.ToolStripMenuItem hide_unhide_graphs;
         private System.Windows.Forms.DataVisualization.Charting.Chart amplitude_chart;
         private System.Windows.Forms.ToolStripMenuItem connectToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem connectToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem uploadCodeToolStripMenuItem1;
     }
 }
 

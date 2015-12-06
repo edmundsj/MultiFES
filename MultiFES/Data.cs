@@ -176,10 +176,13 @@ namespace CSharpProject
             }
 
 
-            // allows us to write any capsule data to file.
-            public virtual void writeToFile(String filename)
+            /// <summary>
+            /// Writes capsule data to file.
+            /// </summary>
+            /// <param name="filename"></param>
+            /// <returns>0 for success, 1 for no data to write, 2 for data not successfully added, 3 for file in use</returns>
+            public virtual int writeToFile(String filename)
             {
-
                 DateTime t = DateTime.Now;
                 String filename_ending = filename;
                 filename_ending += "_";
@@ -191,6 +194,10 @@ namespace CSharpProject
                 filename = Path.Combine(Settings.CSV_PATH, filename_ending);
 
                 String d = "";
+                if(this.Timestamps.Count == 0)
+                {
+                    return 1; // no data to write
+                }
                 for (int i = 0; i < this.Timestamps.Count; i++)
                 {
                     d += Convert.ToString(this.Timestamps[i]) + ",";
@@ -204,11 +211,18 @@ namespace CSharpProject
                     StreamWriter sw = new StreamWriter(filename);
                     sw.Write(d);
                     sw.Close();
+                    if(d.Length == 0)
+                    {
+                        return 2; // there was data to write, but it did not get added
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                catch (IOException ex)
+                catch (IOException)
                 {
-                    MessageBox.Show("Undefined Exception, writeToFile(): The file we tried to write to appears to be in use.\nError Code: " +
-                        ex.Message, "File Writing Error");
+                    return 3;
                 }
             }
 

@@ -269,76 +269,87 @@ namespace CSharpProject
         }
 
         // load our complete set of settigs from XML.
-        public static void loadSettings(String filename)
+        public static bool loadSettings(String filename)
         {
-            filename = Path.Combine(XML_PATH, filename);
-            filename += ".xml";
-            XmlReader xreader = XmlReader.Create(filename);
-            SettingsFiles file_type = SettingsFiles.PROTOCOL_FILE; // arbitrary choice
-
-            while (xreader.Read())
+            try
             {
-                if (xreader.NodeType == XmlNodeType.Element)
-                {
-                    if (xreader.Name == "defaults")
-                    {
-                        // do nothing, we are at the root node
-                    }
-                    else if (xreader.Name == "protocol_file")
-                    {
-                        file_type = SettingsFiles.PROTOCOL_FILE;
-                    }
-                    else if (xreader.Name == "electrode_array_file")
-                    {
-                        file_type = SettingsFiles.ELECTRODE_ARRAY_FILE;
-                    }
-                    else if (xreader.Name == "microcontroller_file")
-                    {
-                        file_type = SettingsFiles.MICROCONTROLLER_FILE;
-                    }
-                    else if (xreader.Name == "load_cell_file")
-                    {
-                        file_type = SettingsFiles.LOAD_CELL_FILE;
-                    }
-                    else if (xreader.Name == "data_directory")
-                    {
-                        file_type = SettingsFiles.DATA_DIRECTORY;
-                    }
-                    else
-                    {
-                        throw new XmlException("Defined Error: Base Settings file appears to have an improper node." + Convert.ToString(file_type));
-                    }
-                }
-                else if (xreader.NodeType == XmlNodeType.Text)
-                {
-                    switch (file_type)
-                    {
-                        case SettingsFiles.PROTOCOL_FILE:
-                            loadProtocol(Path.Combine(XML_PATH, xreader.Value));
-                            break;
-                        case SettingsFiles.ELECTRODE_ARRAY_FILE:
-                            loadArray(Path.Combine(XML_PATH, xreader.Value));
-                            break;
-                        case SettingsFiles.MICROCONTROLLER_FILE:
-                            loadMicrocontroller(Path.Combine(XML_PATH, xreader.Value));
-                            break;
-                        case SettingsFiles.LOAD_CELL_FILE:
-                            loadLoadCell(Path.Combine(XML_PATH, xreader.Value));
-                            break;
-                        default:
-                            XmlException xml_ex = new XmlException("Defined Error: Unable to identify node type in settings file.");
-                            throw xml_ex;
-                    }
+                filename = Path.Combine(XML_PATH, filename);
+                filename += ".xml";
+                XmlReader xreader = XmlReader.Create(filename);
+                SettingsFiles file_type = SettingsFiles.PROTOCOL_FILE; // arbitrary choice
 
+                while (xreader.Read())
+                {
+                    if (xreader.NodeType == XmlNodeType.Element)
+                    {
+                        if (xreader.Name == "defaults")
+                        {
+                            // do nothing, we are at the root node
+                        }
+                        else if (xreader.Name == "protocol_file")
+                        {
+                            file_type = SettingsFiles.PROTOCOL_FILE;
+                        }
+                        else if (xreader.Name == "electrode_array_file")
+                        {
+                            file_type = SettingsFiles.ELECTRODE_ARRAY_FILE;
+                        }
+                        else if (xreader.Name == "microcontroller_file")
+                        {
+                            file_type = SettingsFiles.MICROCONTROLLER_FILE;
+                        }
+                        else if (xreader.Name == "load_cell_file")
+                        {
+                            file_type = SettingsFiles.LOAD_CELL_FILE;
+                        }
+                        else if (xreader.Name == "data_directory")
+                        {
+                            file_type = SettingsFiles.DATA_DIRECTORY;
+                        }
+                        else
+                        {
+                            throw new XmlException("Defined Error: Base Settings file appears to have an improper node." + Convert.ToString(file_type));
+                        }
+                    }
+                    else if (xreader.NodeType == XmlNodeType.Text)
+                    {
+                        switch (file_type)
+                        {
+                            case SettingsFiles.PROTOCOL_FILE:
+                                loadProtocol(Path.Combine(XML_PATH, xreader.Value));
+                                break;
+                            case SettingsFiles.ELECTRODE_ARRAY_FILE:
+                                loadArray(Path.Combine(XML_PATH, xreader.Value));
+                                break;
+                            case SettingsFiles.MICROCONTROLLER_FILE:
+                                loadMicrocontroller(Path.Combine(XML_PATH, xreader.Value));
+                                break;
+                            case SettingsFiles.LOAD_CELL_FILE:
+                                loadLoadCell(Path.Combine(XML_PATH, xreader.Value));
+                                break;
+                            default:
+                                XmlException xml_ex = new XmlException("Defined Error: Unable to identify node type in settings file.");
+                                throw xml_ex;
+                        }
+
+                    }
                 }
+                xreader.Close();
             }
-            xreader.Close();
+            catch (Exception ex)
+            {
+                MessageBox.Show("There was an error loading the settings. Please check the default XML files." + ex.Message,
+                     "Load Settings Failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+                return false;
+            }
+            return true;
         }
 
         // load our default settings.
-        public static void loadDefaultSettings()
+        public static bool loadDefaultSettings()
         {
-            loadSettings("default");
+            return loadSettings("default");
         }
         
         enum SettingsFiles

@@ -5,6 +5,7 @@ using System.IO.Ports;
 using System.Windows.Forms;
 using System.Threading;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace CSharpProject
 {
@@ -63,6 +64,38 @@ namespace CSharpProject
             port_names.Clear();
             ports.Clear();
             initialized = false;
+        }
+
+        /// <summary>
+        /// Uploads code to the arduino.
+        /// </summary>
+        /// <returns>0 for success, 1 for avrdude failure, 2 for connection failure</returns>
+        public static int UploadCode()
+        {
+            if (Comms.Close()) // if we can successfully close the port
+            {
+                var proc = new Process();
+                proc.StartInfo.FileName = Settings.AVRDUDE_PATH + "avrdude.exe";
+                proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH
+                    + "avrdude.conf\" -cwiring -P" + Comms.ActivePort + " -patmega2560 -b115200 -D -Uflash:w:\""
+                    + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
+                //proc.StartInfo.CreateNoWindow = true;
+                //proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+
+                proc.Start();
+                proc.WaitForExit();
+                var exitCode = proc.ExitCode;
+                proc.Close();
+                if (exitCode == 0)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return 1; // the exit code for an AVRDUDE failure
+                }
+            }
+            else return 2; // the exit code for a communication failure
         }
 
         /// <summary>
@@ -134,14 +167,18 @@ namespace CSharpProject
         /// and sets all our node amplitudes to zero.
         /// </summary>
         /// <returns>Returns true if successful.</returns>
-        public static bool Close() // this closes communication with the arduino
+        public static bool Close()
         {
             try {
-                if (ports[active_port].IsOpen == false)
+                if (active_port < ports.Count)
                 {
-                    ports[active_port].Open();
-                    
+                    if (ports[active_port].IsOpen == false)
+                    {
+                        ports[active_port].Open();
+
+                    }
                 }
+                else return false;
 
                 Nodes.setAllZero(); // I would prefer not to have this here, but I'll live for now...
                 Comms.Send(new Command(Comms.Command.CommandType.EMERGENCY_OFF));

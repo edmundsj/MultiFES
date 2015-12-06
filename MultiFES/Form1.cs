@@ -29,24 +29,35 @@ namespace CSharpProject
         private void InitializeOtherThings()
         {
             // XMLWrapper.loadXMLSettings();            // load our initial settings data
-            Settings.loadDefaultSettings();
+            if(Settings.loadDefaultSettings() == false)
+            {
+
+            }
+            else 
+            {
+                if (Nodes.Initialize() == false)
+                {
+                    MessageBox.Show("There was an error with the settings. Please check the default node array XML file.",
+                         "Connection Failure", MessageBoxButtons.OK,
+                       MessageBoxIcon.Exclamation);
+                    Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
+                }
+                else
+                {
+                    initializePadArray();                   // create our Nodes pad on the UI with all the buttons.
+                }
+            }
             if(Comms.Initialize() == false)
             {
-                MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in.",
+                MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in, then click File-> Arduino -> Connect",
                      "Connection Failure", MessageBoxButtons.OK,
                    MessageBoxIcon.Exclamation);
-            }
-            if (Nodes.Initialize() == false)
-            {
-                MessageBox.Show("There was an error with the settings. Please check the default node array XML file.",
-                     "Connection Failure", MessageBoxButtons.OK,
-                   MessageBoxIcon.Exclamation);
-                Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
             }
             else
             {
-                initializePadArray();                   // create our Nodes pad on the UI with all the buttons.
+                
             }
+            
             Timekeeeper.Initialize();               // initializes our timekeeper
             
             force_chart.DataSource = Data.Experimental.ForceData;
@@ -79,7 +90,6 @@ namespace CSharpProject
                 Data.General.Amplitudes.Add(new Data.Capsule());
                 
             }
-
         }
 
         /// <summary>
@@ -227,14 +237,33 @@ namespace CSharpProject
             if (save_file_dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 // NOTE: DATA.EXPERIMENTAL.FORCEDATA WILL ONLY HAVE DATA IF YOU ARE RUNNING AN EXPERIMENT (duh)
-                Data.ForceData.writeToFile(save_file_dialog.FileName + "_mvc-data_");  // write the file
-
+                int force_result = Data.ForceData.writeToFile(save_file_dialog.FileName + "_mvc-data_");  // write the file
+                int amplitude_result = 0;
                 // write our amplitude data to file.
                 for (int i = 0; i < Data.Amplitudes.Count; i++)
                 {
-                    Data.Amplitudes[i].writeToFile(save_file_dialog.FileName + "CH-"
+                    int temp_result = Data.Amplitudes[i].writeToFile(save_file_dialog.FileName + "CH-"
                         + i.ToString() + "_amplitude-data_");
+                    if(temp_result != amplitude_result && amplitude_result == 0)
+                    {
+                        amplitude_result = temp_result;
+                    }
                 }
+                if (force_result == 0 && amplitude_result == 0)
+                {
+                    MessageBox.Show("Successfully wrote all data to file.",
+                        "Data Write Successful.", MessageBoxButtons.OK,
+                       MessageBoxIcon.Information);
+                }
+                else 
+                {
+                    String result = "There was an error writing the ";
+                    if (force_result != 0) result += "force data: Exit code " + force_result.ToString() + ",";
+                    if (amplitude_result != 0) result += " amplitude data: Exit code " + amplitude_result.ToString();
+
+                    MessageBox.Show(result, "Data write Failure", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
+
                 Comms.Input.Buffer.Empty(); // make sure our program doesn't crash.
                 Data.Experimental.Clear();
             }
@@ -412,35 +441,7 @@ namespace CSharpProject
         {
             Settings.Experimental.CurrentType = Settings.Experimental.ExperimentType.MultiChannel;
         }
-
-        // this uploads our arduino code.
-        private void uploadCodeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (Comms.Close()) // if we can successfully close the port
-            {
-                var proc = new Process();
-                proc.StartInfo.FileName = Settings.AVRDUDE_PATH + "avrdude.exe";
-                proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH
-                    + "avrdude.conf\" -cwiring -P" + Comms.ActivePort + " -patmega2560 -b115200 -D -Uflash:w:\""
-                    + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
-                //proc.StartInfo.CreateNoWindow = true;
-                //proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-                proc.Start();
-                proc.WaitForExit();
-                var exitCode = proc.ExitCode;
-                proc.Close();
-                if (exitCode == 0)
-                {
-                    MessageBox.Show("Uploaded Code Successfully!");
-                }
-                else
-                {
-                    MessageBox.Show("There was a problem uploading the code.");
-                }
-            }
-        }
-
+        
         // this binds some data to our graph
         private void graphToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -470,12 +471,12 @@ namespace CSharpProject
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+        private void connectToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             Comms.Destroy();
             if (Comms.Initialize())
             {
-                MessageBox.Show("Successfully connected to Arduino.", 
+                MessageBox.Show("Successfully connected to Arduino.",
                     "Connected Successfully", MessageBoxButtons.OK,
                    MessageBoxIcon.Information);
             }
@@ -483,6 +484,30 @@ namespace CSharpProject
             {
                 MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in.",
                      "Connection Failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+            }
+        }
+
+        private void uploadCodeToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            int return_val = Comms.UploadCode();
+
+            if (return_val == 0)
+            {
+                MessageBox.Show("Uploaded Code successfully!",
+                     "Upload Success", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+            }
+            else if (return_val == 1)
+            {
+                MessageBox.Show("There was a problem uploading code to the arduino. Check avrdude settings.",
+                     "Upload failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+            }
+            else if (return_val == 2)
+            {
+                MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in, then click File -> Arduino -> Connect",
+                     "Connection failure", MessageBoxButtons.OK,
                    MessageBoxIcon.Exclamation);
             }
         }
