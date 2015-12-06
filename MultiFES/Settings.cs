@@ -422,7 +422,7 @@ namespace CSharpProject
 
         public static class Experimental
         {
-            public static int Interval { get; set; } = 5; // how often we rotate between nodes
+            public static int Interval { get; set; } = 15; // how often we rotate between nodes
             public static int StepsPerSecond { get; set; } = 20; // our steps per second
             public static int Duration { get; set; } = 120; // how long the experiment lasts total
             public static bool SaveAfter { get; set; } // do we want to automatically save afterwards?
@@ -434,7 +434,7 @@ namespace CSharpProject
                 SingleChannel,
                 MultiChannel
             };
-            static double down_delay = 0;
+            static double down_delay = 0.6;
             public static double DownDelay
             {
                 get

@@ -285,61 +285,73 @@ namespace CSharpProject
         private void sToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 5;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 10;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem2_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 15;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem3_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 20;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem4_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 25;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem5_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Interval = 30;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem6_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 45;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem7_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 60;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem8_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 90;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem9_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 120;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem10_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 150;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         private void sToolStripMenuItem11_Click(object sender, EventArgs e)
         {
             Settings.Experimental.Duration = 180;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         /// <summary>
@@ -372,80 +384,29 @@ namespace CSharpProject
         // our ui timer
         private void ui_timer_Tick(object sender, EventArgs e)
         {
-
-            updateUI(); // update our UI here
-
+            updateUI(); // this updates our UI
         }
-
-        private void fastStartToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        // sets our ramping down delay to 0.1
-        private void toolStripMenuItem7_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.1;
-        }
-
-        // sets our ramping down delay to 0.2
-        private void toolStripMenuItem6_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.2;
-        }
-
-
-        // sets our ramping down delay to 0.3
-        private void toolStripMenuItem5_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.3;
-        }
-
-        // sets our ramping down delay to 0.8
-        private void toolStripMenuItem4_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.4;
-        }
-
-        // sets our ramping down delay to 0.8
-        private void toolStripMenuItem3_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.5;
-        }
-
-        // sets our ramping down delay to 0.6
-        private void toolStripMenuItem2_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.6;
-        }
-
-        // sets our ramping down delay to 0.7
-        private void sameTimeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Settings.Experimental.DownDelay = 0.7;
-        }
-
-        // sets our ramping down delay to 0.8
+        
+        
+        // sets our ramping down delay to whatever we need 0.1-0.8
         private void rampUpFirstToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Settings.Experimental.DownDelay = 0.8;
-        }
-
-        // this begins single-channel stimulation
-        private void typeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
+            Settings.Experimental.DownDelay = Convert.ToDouble(((ToolStripMenuItem)sender).Text);
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         // changes the experiment to single channel type
         private void singlechannelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Settings.Experimental.CurrentType = Settings.Experimental.ExperimentType.SingleChannel;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
 
         // changes the experiment to multi-channel type
         private void multichannelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Settings.Experimental.CurrentType = Settings.Experimental.ExperimentType.MultiChannel;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
         }
         
         // this binds some data to our graph
@@ -454,7 +415,10 @@ namespace CSharpProject
 
         }
 
-        // hides or unhides the graphs so our user cannot see them.
+        /// <summary>
+        /// Event handler for the button that hides or unhides the UI's graphs. 
+        /// Found under Experiment -> Hide/Unhide graphs
+        /// </summary>
         private void hideGraphsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (this.force_chart.Visible == true)
@@ -473,10 +437,9 @@ namespace CSharpProject
         }
 
         /// <summary>
-        /// This reconnects the serial port if the user did not plug it in when they should have.
+        /// Event handler that reconnects the serial port if the user did not plug it in when 
+        /// they should have. Found under File -> Arduino -> Connect
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void connectToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             Comms.Destroy();
@@ -516,6 +479,21 @@ namespace CSharpProject
                      "Connection failure", MessageBoxButtons.OK,
                    MessageBoxIcon.Exclamation);
             }
+        }
+        public void UncheckOtherToolStripMenuItems(ToolStripMenuItem selectedMenuItem)
+        {
+            selectedMenuItem.Checked = true;
+
+            // Select the other MenuItens from the ParentMenu(OwnerItens) and unchecked this,
+            // The current Linq Expression verify if the item is a real ToolStripMenuItem
+            // and if the item is a another ToolStripMenuItem to uncheck this.
+            foreach (var ltoolStripMenuItem in (from object
+                                                    item in selectedMenuItem.Owner.Items
+                                                let ltoolStripMenuItem = item as ToolStripMenuItem
+                                                where ltoolStripMenuItem != null
+                                                where !item.Equals(selectedMenuItem)
+                                                select ltoolStripMenuItem))
+                (ltoolStripMenuItem).Checked = false;
         }
     }
 }
