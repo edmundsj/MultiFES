@@ -9,9 +9,14 @@ using System.Windows.Forms;
 
 namespace CSharpProject
 {
+    /// <summary>
+    /// This static class keeps track of time, both experimental time and general time.
+    /// </summary>
     static class Timekeeeper
     {
-
+        /// <summary>
+        /// Initializes our timekeepers by adding event handlers 
+        /// </summary>
         public static void Initialize()
         {
             if (initialized == false)
@@ -23,7 +28,6 @@ namespace CSharpProject
         }
         public static void Stop()
         {
-            Initialize();
             General.Stop();
             Experimental.Stop();
             experimental_timer.Stop();
@@ -31,10 +35,13 @@ namespace CSharpProject
 
         public static void Reset()
         {
-            Initialize();
             General.Reset();
             Experimental.Reset();
         }
+
+        /// <summary>
+        /// This class is used for non-experimental timing operations.
+        /// </summary>
         public static class General
         {
             // starts our stopwatch
@@ -72,6 +79,10 @@ namespace CSharpProject
 
             static Stopwatch watch = new Stopwatch();
         }
+
+        /// <summary>
+        /// Used exclusively for Experimental timing operations. Do not use for anything else.
+        /// </summary>
         public static class Experimental
         {
 
@@ -111,6 +122,9 @@ namespace CSharpProject
             static Stopwatch watch = new Stopwatch();
         }
 
+        /// <summary>
+        /// Checks to see what the elapsed time is. Experimental time overrides General time.
+        /// </summary>
         public static double ElapsedSeconds
         {
             get
@@ -130,6 +144,9 @@ namespace CSharpProject
             }
         }
 
+        /// <summary>
+        /// Checks to see if any timekeeper is running.
+        /// </summary>
         public static bool IsRunning
         {
             get
@@ -145,7 +162,9 @@ namespace CSharpProject
             }
         }
 
-        // this is our Settings.Experimental timer. We use it to determine whether we should rotate or not.
+        /// <summary>
+        /// The experimental timer tick 
+        /// </summary>
         private static void experimental_timer_Tick(object sender, EventArgs e)
         {
             if (Settings.Experimental.CurrentType == Settings.Experimental.ExperimentType.MultiChannel)

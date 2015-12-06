@@ -23,59 +23,68 @@ namespace CSharpProject
             InitializeOtherThings();
         }
 
+        /// <summary>
+        /// Initializes all the dynamically created objects that cannot be known before runtime.
+        /// </summary>
         private void InitializeOtherThings()
         {
             // XMLWrapper.loadXMLSettings();            // load our initial settings data
             Settings.loadDefaultSettings();
-            Comms.Initialize();
+            if(Comms.Initialize() == false)
+            {
+                MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in.",
+                     "Connection Failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+            }
+            if (Nodes.Initialize() == false)
+            {
+                MessageBox.Show("There was an error with the settings. Please check the default node array XML file.",
+                     "Connection Failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+                Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
+            }
+            else
+            {
+                initializePadArray();                   // create our Nodes pad on the UI with all the buttons.
+            }
             Timekeeeper.Initialize();               // initializes our timekeeper
-            Nodes.Initialize();                // initialize our node array based on the loaded settings
-            initializeArray();                                // create our Nodes pad on the UI with all the buttons.
-            updateUI();
-            Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
-            force_chart.DataSource = Data.Experimental.ForceData;
-            amplitude_chart.DataSource = Data.Experimental.Amplitudes;
-            //force_groupbox.Controls.Add(force_graph.wrapped_chart);
-            // amplitude_groupbox.Controls.Add(amplitude_graph.wrapped_chart);
             
+            force_chart.DataSource = Data.Experimental.ForceData;
 
+            ui_timer.Enabled = true;
+            updateUI();
 
             // so in the "background", or asynchronously, we need to recieve MVC data from the arduino
         }
 
         // this creates our pad and it's dependent graph
-        private void initializeArray()
+        private void initializePadArray()
         {
 
             for (int i = 0; i < Nodes.Count; i++)
             {
                 // first we create our array pad
                 Button temp_button = new Button();
-                temp_button.Text = "CH " + Convert.ToString(Nodes.getNode(i).Index); // get the index of the node
-                temp_button.Name = Convert.ToString(Nodes.getNode(i).Index); // how we will identify our node
+                temp_button.Text = "CH " + Convert.ToString(Nodes.getNode(i).ID); // get the ID of the node
+                temp_button.Name = Convert.ToString(Nodes.getNode(i).ID); // how we will identify our node
                 temp_button.Location = Nodes.getPoint(i);
-                temp_button.Width = Nodes.getWidth(i);
-                temp_button.Height = Nodes.getHeight(i);
+                temp_button.Width = Nodes.getNode(i).Width;
+                temp_button.Height = Nodes.getNode(i).Height;
                 temp_button.Click += new System.EventHandler(Nodes.padClicked);
                 Nodes.UIButtons.Add(temp_button);
-                array_pad.Controls.Add(Nodes.getButtonByIndex(Nodes.getNode(i).Index));
+                array_pad.Controls.Add(Nodes.getButtonByIndex(Nodes.getNode(i).ID));
 
                 // now we create our data variables
                 Data.Experimental.Amplitudes.Add(new Data.Capsule());
                 Data.General.Amplitudes.Add(new Data.Capsule());
-
-                // here we add some series data to the amplitude chart
-                /*
-                Series new_series = new Series(i.ToString());
-                new_series.XValueMember = "[" + i.ToString() + "].Timestamps";
-                new_series.YValueMembers = "[" + i.ToString() + "].Values";
-                amplitude_chart.Series.Add(new_series);
-                */ // not sure how to do this at this point in time... 
+                
             }
 
         }
 
-        // updates the pad section of our UI with pretty colors.
+        /// <summary>
+        /// Updates our Node Pad UI to make our selected node orange.
+        /// </summary>
         private void updatePadUI()
         {
             // first we want to highlight our selected node
@@ -84,21 +93,21 @@ namespace CSharpProject
                 Nodes.UIButtons[i].BackColor = Color.LightGray;
             }
             
-            Nodes.getButtonByIndex(Nodes.SelectedNode.Index).BackColor = Color.Coral;
+            Nodes.getButtonByIndex(Nodes.SelectedNode.ID).BackColor = Color.Coral;
             
         }
 
-        // here we update all our UI components with relevant information from the settings and our
-        // base MVC capsule.
+        /// <summary>
+        /// Updates all UI components to contain the proper values and elements.
+        /// </summary>
         private void updateUI()
         {
+            updatePadUI();
             if (Timekeeeper.IsRunning)
             {
                 force_chart.Series[0].Points.DataBindXY(Data.ForceData.Timestamps,
                     Data.ForceData.Values);
             }
-            updatePadUI();
-            //force_graph.Update();
 
             // update our labels and sliders according to the current valid frequency.
 
@@ -115,7 +124,7 @@ namespace CSharpProject
                 debug_box.Visible = true;
                 while (!Debug.IsEmpty)
                 {
-                    debug_box.AppendText(Debug.chopStatement() + Environment.NewLine);
+                    debug_box.AppendText(Debug.PopStatement() + Environment.NewLine);
                 }
 
             }
@@ -135,7 +144,12 @@ namespace CSharpProject
             }
         }
 
-        // begins stimulation
+        /// <summary>
+        /// Begins our FES stimulation in response to the user clicking the "stimulate" button,
+        /// or ends the stimulation in response to the user clicking the "abort" button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void stimulate_button_Click(object sender, EventArgs e)
         {
             // if the user clicks "STIMULATE"
@@ -162,7 +176,9 @@ namespace CSharpProject
             // then we set the button's text to the opposite of what it was
         }
 
-        // this happens when we change a value on our frequency trackbar
+        /// <summary>
+        /// Event handler for frequency trackbar scrolling
+        /// </summary>
         private void frequency_trackbar_Scroll(object sender, EventArgs e)
         {
             // make sure the selected node is valid.
@@ -170,7 +186,9 @@ namespace CSharpProject
             
         }
 
-        // this happens when we change the value on our amplitude trackbar
+        /// <summary>
+        /// Event handler for the amplitude trackbar scrolling.
+        /// </summary>
         private void amplitude_trackbar_Scroll(object sender, EventArgs e)
         {
             Nodes.SelectedNode.Amplitude = ((TrackBar)sender).Value;
@@ -182,7 +200,9 @@ namespace CSharpProject
         }
         
 
-        // debugs the Arduino Output by pasting it all to the screen first
+        /// <summary>
+        /// Event handler for Debug -> Output menu item
+        /// </summary>
         private void arduinoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (Comms.DebugEnabled == false)
@@ -195,20 +215,7 @@ namespace CSharpProject
             }
 
         }
-
-        // debugs the Arduino Input by pasting it all to the screen in raw form.
-        private void inputToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (Comms.Input.DebugEnabled == false)
-            {
-                Comms.Input.DebugEnabled = true;
-            }
-            else
-            {
-                Comms.Input.DebugEnabled = false;
-            }
-        }
-
+        
         // saves the data we had just recorded
         private void dataToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -228,7 +235,7 @@ namespace CSharpProject
                     Data.Amplitudes[i].writeToFile(save_file_dialog.FileName + "CH-"
                         + i.ToString() + "_amplitude-data_");
                 }
-                Comms.Input.Buffer.Clear(); // make sure our program doesn't crash.
+                Comms.Input.Buffer.Empty(); // make sure our program doesn't crash.
                 Data.Experimental.Clear();
             }
         }
@@ -414,7 +421,7 @@ namespace CSharpProject
                 var proc = new Process();
                 proc.StartInfo.FileName = Settings.AVRDUDE_PATH + "avrdude.exe";
                 proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH
-                    + "avrdude.conf\" -cwiring -P" + Comms.PortName + " -patmega2560 -b115200 -D -Uflash:w:\""
+                    + "avrdude.conf\" -cwiring -P" + Comms.ActivePort + " -patmega2560 -b115200 -D -Uflash:w:\""
                     + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
                 //proc.StartInfo.CreateNoWindow = true;
                 //proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -456,6 +463,28 @@ namespace CSharpProject
             }
 
             
+        }
+
+        /// <summary>
+        /// This reconnects the serial port if the user did not plug it in when they should have.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Comms.Destroy();
+            if (Comms.Initialize())
+            {
+                MessageBox.Show("Successfully connected to Arduino.", 
+                    "Connected Successfully", MessageBoxButtons.OK,
+                   MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in.",
+                     "Connection Failure", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+            }
         }
     }
 }

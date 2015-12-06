@@ -12,6 +12,12 @@ namespace CSharpProject
 {
     static class Nodes
     {
+        /// <summary>
+        /// Gets a node by its zero-based index. 
+        /// Throws error code 0x008 if the index is out of range.
+        /// </summary>
+        /// <param name="index">The zero-based node index.</param>
+        /// <returns>A Node with the specified index.</returns>
         public static Node getNode(int index)
         {
             if (index < nodes.Count)
@@ -20,7 +26,7 @@ namespace CSharpProject
             }
             else
             {
-                throw new ArgumentOutOfRangeException("Defined Error, Node[]: Node index out of range. ");
+                throw new ArgumentOutOfRangeException("Node index out of range. Error code 0x008.");
             }
         }
 
@@ -28,7 +34,7 @@ namespace CSharpProject
         {
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (nodes[i].Index == node_id)
+                if (nodes[i].ID == node_id)
                 {
                     return nodes[i];
                 }
@@ -59,8 +65,8 @@ namespace CSharpProject
                 ramping_up_start_time = start_time;
                 ramping_down_duration = (end_time - start_time) * (1.0 - Settings.Experimental.DownDelay);
 
-                Node ramping_up_node = Nodes.selectNode(Settings.NodeStatus.DORMANT);
-                Node ramping_down_node = Nodes.selectNode(Settings.NodeStatus.ACTIVE);
+                Node ramping_up_node = Nodes.getNode(Settings.NodeStatus.DORMANT);
+                Node ramping_down_node = Nodes.getNode(Settings.NodeStatus.ACTIVE);
 
                 // the slopes are in units of amplitudes per step
                 ramping_up_slope = ramping_up_node.MaximumAmplitude / Settings.Experimental.RampTime /
@@ -118,67 +124,51 @@ namespace CSharpProject
             nodes.Add(n);
         }
         // here we set up our node array from our settings class
-        public static void Initialize()
+        /// <summary>
+        /// Initializes our node array from the previously loaded settings
+        /// </summary>
+        public static bool Initialize()
         {
-            try {
-                destroyArray(); // destroy the old array
+            destroyArray(); // destroy the old array
 
-                List<int> node_vars = Settings.popNodeData(); // pop data from our settings
-                while (node_vars.Count > 0)
-                {
-                    if (node_vars.Count == 5) // all good. we can proceed
-                    {
-                        Node temp_node = new Node(node_vars[0]);
-                        nodes.Add(temp_node);
-                        NodeIDs.Add(node_vars[0]);
-                        NodeXCoors.Add(node_vars[1]);
-                        NodeYCoors.Add(node_vars[2]);
-                        Widths.Add(node_vars[3]);
-                        Heights.Add(node_vars[4]);
-                    }
-                    else if (node_vars.Count > 0 && node_vars.Count != 5)
-                    {
-                        throw new Exception("Defined Error, initializeArray(): There appears to be a problem with the number "
-                            + "of arguments passed to us by the settings popNode function.");
-                    }
-                    node_vars.Clear();
-                    node_vars = Settings.popNodeData();
-                }
-                if (nodes.Count > 0)
-                {
-                    SelectedNode = Nodes.nodes[0];
-                }
-                else
-                {
-                    SelectedNode = new Node(0); // bugy as hell.
-                }
-            }
-            catch (Exception ex)
+            for (int i = 0; i < Settings.NodeIDs.Count; i++)
             {
-                MessageBox.Show(ex.Message);
+                Node temp_node = new Node((int)Settings.NodeIDs[i]);
+                temp_node.XCoor = Settings.NodeXCoors[i];
+                temp_node.YCoor = Settings.NodeYCoors[i];
+                temp_node.Width = Settings.Widths[i];
+                temp_node.Height = Settings.Heights[i];
+
+                nodes.Add(temp_node);
             }
+
+            if (nodes.Count > 0)
+            {
+                SelectedNode = Nodes.nodes[0];
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+
         }
 
         // destroys all the information contained in the Nodes class.
         public static void destroyArray()
         {
-            selected_node = -1;
+            selected_node_id = -1;
             // clear out our old arrays.
             nodes.Clear();
-            NodeIDs.Clear();
-            NodeXCoors.Clear();
-            NodeYCoors.Clear();
-            Widths.Clear();
-            Heights.Clear();
         }
 
-        // selects a node for us
-        public static void selectNode(uint selector)
-        {
-            selected_node = Convert.ToInt32(selector);
-        }
-
-        public static Node selectNode(Settings.NodeStatus status)
+        /// <summary>
+        /// This gets the first node with a given status
+        /// Throws error code 0x004 if it cannot find a node with that status.
+        /// </summary>
+        /// <param name="status">Status of the node</param>
+        /// <returns>Returns the actual node.</returns>
+        public static Node getNode(Settings.NodeStatus status)
         {
             // for now, return the first active node
             for (int i = 0; i < Count; i++)
@@ -188,27 +178,20 @@ namespace CSharpProject
                     return nodes[i];
                 }
             }
-            throw new ArgumentOutOfRangeException("Defined Error, selectNode(): Unable to find node with status " +
-                Convert.ToString(status));
+            throw new ArgumentOutOfRangeException("Unable to find node with status " +
+                Convert.ToString(status) + ". Error code 0x004.");
         }
-
-        public static int getReverseIndex(int id)
-        {
-            for(int i = 0; i < nodes.Count; i++)
-            {
-                if(nodes[i].Index == id)
-                {
-                    return i;
-                }
-            }
-            throw new Exception("Defined Error, getReverseIndex(): Could not find node.");
-        }
-
-        public static Node getNodeByID(int ind)
+        
+        /// <summary>
+        /// Gets a node by its zero-based channel ID as seen on the FES board.
+        /// </summary>
+        /// <param name="ind"></param>
+        /// <returns>The node with a given id</returns>
+        public static Node getNodeByID(int id)
         {
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (nodes[i].Index == ind)
+                if (nodes[i].ID == id)
                 {
                     return nodes[i];
                 }
@@ -220,17 +203,12 @@ namespace CSharpProject
         {
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (nodes[i].Index == ind)
+                if (nodes[i].ID == ind)
                 {
                     return UIButtons[i];
                 }
             }
             return new Button();
-        }
-
-        public static int getSelectedNodeIndex()
-        {
-            return selected_node;
         }
 
         public static void setGlobalFrequency()
@@ -253,52 +231,34 @@ namespace CSharpProject
         public static void padClicked(Object sender, System.EventArgs e)
         {
             Button intermediary = (Button)sender; // we know the object we are dealing with is a button
-            Nodes.selectNode(Convert.ToUInt16(intermediary.Name));
+            Nodes.selected_node_id = Convert.ToUInt16(intermediary.Name);
         }
 
+        /// <summary>
+        /// Gets a point from a given node index for placing the node on the UI.
+        /// Returns error code 0x007 if the node cannot be found.
+        /// </summary>
+        /// <param name="node_index"></param>
+        /// <returns>Returns a Point</returns>
         public static Point getPoint(int node_index)
         {
 
             const int ugliness_offset = 15;
-            if (node_index < Nodes.Count && NodeXCoors.Count == Nodes.Count && NodeYCoors.Count == Nodes.Count)
+            if (node_index < Nodes.Count)
             {
-                return new Point(NodeXCoors[node_index] + ugliness_offset - 5, NodeYCoors[node_index] + ugliness_offset);
+                return new Point(nodes[node_index].XCoor + ugliness_offset - 5, nodes[node_index].YCoor + ugliness_offset);
             }
-            return new Point(0, 0);
+            else throw new ArgumentException("There appears to be a problem loading the Settings. Error code 0x007.");
         }
-
-        // returns the width of a node
-        public static int getWidth(int node_index)
-        {
-            if (node_index < Nodes.Count && node_index < Widths.Count && Nodes.Count == Widths.Count)
-            {
-                return Widths[node_index];
-            }
-            else
-            {
-                throw new Exception("Defined Exception, getWidth(): Something is wrong with the settings.");
-            }
-        }
-
-        // returns the height of a node
-        public static int getHeight(int node_index)
-        {
-            if (node_index < nodes.Count && node_index < Heights.Count && nodes.Count == Heights.Count)
-            {
-                return Heights[node_index];
-            }
-            else
-            {
-                throw new Exception("Defined Exception, getHeight(): Something is wrong with the settings.");
-            }
-        }
+        
 
         public class Node
         {
-            public Node(int ind)
+            public Node(int id)
             {
-                this.Index = ind;
-                this.Status = Settings.NodeStatus.DORMANT;
+                this.ID = id;
+                this.Index = Nodes.Count;
+                this.status = Settings.NodeStatus.DORMANT;
             }
             double amplitude;
             public double Amplitude
@@ -335,12 +295,12 @@ namespace CSharpProject
                     }
                     // now we actually send the command.
                     Comms.Queue(new Comms.Command(Comms.Command.CommandType.AMPLITUDE_CHANGE,
-                        Index, Convert.ToInt16(amplitude)).Bytes);
+                        ID, Convert.ToInt16(amplitude)).Bytes);
 
                     // and we add the amplitude to our data if an experiment is running.
                     if (Timekeeeper.IsRunning)
                     {
-                        Data.Amplitudes[Nodes.getReverseIndex(Index)].addData(Timekeeeper.ElapsedSeconds,
+                        Data.Amplitudes[Nodes.getNodeByID(ID).Index].addData(Timekeeeper.ElapsedSeconds,
                             amplitude);
                     }
                 }
@@ -429,7 +389,9 @@ namespace CSharpProject
                 }
             }
 
-            public int Index { get; set; } = -1;
+            public int ID { get; set; } = -1;
+            public int Index { get; }
+
             Settings.NodeStatus status;
             public Settings.NodeStatus Status
             {
@@ -448,6 +410,11 @@ namespace CSharpProject
                 }
             }
 
+            public int Width { get; set; }
+            public int Height { get; set; }
+            public int XCoor { get; set; }
+            public int YCoor { get; set; }
+
         }
 
         public static int Count
@@ -456,25 +423,18 @@ namespace CSharpProject
         }
         static List<Node> nodes = new List<Node>();
         public static List<Button> UIButtons { get; set; } = new List<Button>();
-        static int selected_node = -1; // no selected node
+        static int selected_node_id = -1; // no selected node
         public static Node SelectedNode 
         {
            
             get
             {
-                return getNodeByID(selected_node);
+                return getNodeByID(selected_node_id);
             }
             set
             {
-                selected_node = value.Index;
+                selected_node_id = value.ID;
             }
         }
-
-        // our setup-specific variables
-        public static List<int> NodeIDs { get; set; } = new List<int>();
-        public static List<int> NodeXCoors { get; set; } = new List<int>();
-        public static List<int> NodeYCoors { get; set; } = new List<int>();
-        public static List<int> Heights { get; set; } = new List<int>();
-        public static List<int> Widths { get; set; } = new List<int>();
     }
 }

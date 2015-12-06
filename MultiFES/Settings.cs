@@ -340,36 +340,6 @@ namespace CSharpProject
         {
             loadSettings("default");
         }
-
-        // returns some node data for our user
-        public static List<int> popNodeData()
-        {
-            List<int> real_data = new List<int>();
-            if (NodeXCoors.Count > 0 && NodeYCoors.Count > 0 && NodeIDs.Count > 0 &&
-                Widths.Count > 0 && Heights.Count > 0)
-            {
-                // send the data to be used
-                real_data.Add(Convert.ToInt16(NodeIDs[0]));
-                real_data.Add(NodeXCoors[0]);
-                real_data.Add(NodeYCoors[0]);
-                real_data.Add(Widths[0]);
-                real_data.Add(Heights[0]);
-
-                // "pop" our node data off
-                NodeIDs.RemoveAt(0);
-                NodeXCoors.RemoveAt(0);
-                NodeYCoors.RemoveAt(0);
-                Widths.RemoveAt(0);
-                Heights.RemoveAt(0);
-
-                return real_data; // return our real data
-            }
-            else
-            {
-                return new List<int>(); // return our fake data
-            }
-
-        }
         
         enum SettingsFiles
         {

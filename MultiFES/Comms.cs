@@ -11,10 +11,17 @@ namespace CSharpProject
     // this class handles communication to and from the arduino
     static class Comms
     {
-        public static void Initialize() // this initializes all things necessary. 
+        /// <summary>
+        /// Initializes our Comms class by detecting any available serial ports and setting
+        /// the first detected serial port as the active serial port.
+        /// </summary>
+        public static bool Initialize()  
         {
             if (initialized == false)
             {
+                ports = new List<SerialPort>();
+                port_names = new List<String>();
+
                 comm_timer.Interval = 10;
                 comm_timer.Tick += new EventHandler(comm_timer_Tick);
                 initialized = true;
@@ -23,52 +30,123 @@ namespace CSharpProject
                 try
                 {
                     String[] possible_ports = SerialPort.GetPortNames();
-                    if(possible_ports.Length == 1)
+                    for(int i = 0; i < possible_ports.Length; i++)
                     {
-                        Comms.PortName = possible_ports[0];
+                        ports.Add(new SerialPort(possible_ports[i], Comms.BaudRate));
+                        ports[i].DataReceived += new SerialDataReceivedEventHandler(Comms.Input.dataReceived);
+                        port_names.Add(possible_ports[i]);
+                        if(i == 0)
+                        {
+                            active_port = i;
+                        }
                     }
-
-                    Comms.arduino_mega.initializePort();
+                    if(possible_ports.Length == 0)
+                    {
+                        return false;
+                    }
 
                 } catch(Win32Exception ex)
                 {
                     MessageBox.Show(ex.Message);
+                    return false;
                 }
             }
+            return true;
         }
 
+        /// <summary>
+        /// Detsroys our Comms class variables so it can be re-initialized. This should be called
+        /// if the user needs to plug in a new device or plug an old one back in.
+        /// </summary>
+        public static void Destroy()
+        {
+            port_names.Clear();
+            ports.Clear();
+            initialized = false;
+        }
+
+        /// <summary>
+        /// Opens the active serial port for communication. Returns true if successful.
+        /// </summary>
+        /// <returns>Returns true if successful.</returns>
         public static bool Open() // this opens our communication with the arduino by opening the port
         {
             try {
-                Initialize();
-                Empty();
-                if (arduino_mega.IsOpen == false)
+                if (ports[active_port].IsOpen == false)
                 {
-                    Comms.arduino_mega.openPort();
+                    ports[active_port].Open();
                 }
                 Comms.comm_timer.Enabled = true;
                 Comms.comm_timer.Start();
                 return true;
-            } catch(Exception base_exception)
+                
+            }
+            catch(NullReferenceException null_exception)
+            {
+                MessageBox.Show("Please plug in your device and Click File->Connect.\n" 
+                    + null_exception.Message, "Arduino Error", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+                   return false;
+            }
+            catch (Exception any_exception)
             {
                 MessageBox.Show("Unable to open communication with the Arduino. Please ensure it is " + 
-                   "properly plugged in. " + base_exception.Message, "Arduino Error", MessageBoxButtons.OK, 
+                   "properly plugged in. " + any_exception.Message, "Arduino Error", MessageBoxButtons.OK, 
                    MessageBoxIcon.Exclamation);
                 return false;
             }
         }
 
+        /// <summary>
+        /// This opens a new port with a specific name for further use, and then 
+        /// sets that port to the new active port. Returns true if successful
+        /// </summary>
+        /// <param name="port_name"></param>
+        /// <returns>Returns true if successful.</returns>
+        public static bool Open(String port_name) // this opens our communication with the arduino by opening the port
+        {
+            try
+            {
+                if (ports[active_port].IsOpen == false)
+                {
+                    if(port_names.Contains(port_name))
+                    {
+                        ports[port_names.IndexOf(port_name)].Open();
+                        active_port = port_names.IndexOf(port_name);
+                    }
+                    ports[active_port].Open();
+                }
+                Comms.comm_timer.Enabled = true;
+                Comms.comm_timer.Start();
+                return true;
+            }
+            catch (Exception base_exception)
+            {
+                MessageBox.Show("Unable to open communication with the Arduino. Please ensure it is " +
+                   "properly plugged in. " + base_exception.Message, "Arduino Error", MessageBoxButtons.OK,
+                   MessageBoxIcon.Exclamation);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Closes the active port. This also sends an abort signal to the FES system
+        /// and sets all our node amplitudes to zero.
+        /// </summary>
+        /// <returns>Returns true if successful.</returns>
         public static bool Close() // this closes communication with the arduino
         {
             try {
-                if (arduino_mega.IsOpen == false)
+                if (ports[active_port].IsOpen == false)
                 {
-                    arduino_mega.openPort();
+                    ports[active_port].Open();
+                    
                 }
 
-                arduino_mega.sendAbortSignal();
-                arduino_mega.closePort();
                 Nodes.setAllZero(); // I would prefer not to have this here, but I'll live for now...
+                Comms.Send(new Command(Comms.Command.CommandType.EMERGENCY_OFF));
+                ports[active_port].Close();
+
                 return true;
             }
             catch(System.IO.IOException io_ex)
@@ -80,36 +158,88 @@ namespace CSharpProject
             }
         }
 
+        /// <summary>
+        /// Reads a line from the active serial port.
+        /// </summary>
+        /// <returns>Returns the line read from the serial port</returns>
+        public static string ReadLine()
+        {
+            try {
+                return Comms.ports[active_port].ReadLine();
+            }
+
+            catch (FormatException)
+            {
+                // do nothing. The arduino has been known to do this.
+            }
+            catch (IOException)
+            {
+                // OutputDebugMessage(L"We must have exited while receiving data. Awk.\n");
+            }
+            catch (OverflowException)
+            {
+                // OutputDebugMessage(L"The arduino is trying to beat us to death with data.\n")
+            }
+
+            return ""; // a null value
+        }
+
+        /// <summary>
+        /// This is the base Send method of which all others are based. Sends a stream of raw bytes
+        /// through the serial port to the arduino for processing.
+        /// </summary>
+        /// <param name="data"></param>
         public static void Send(byte[] data)
         {
-            Initialize();
-            if(arduino_mega.IsOpen)
+            if(ports[active_port].IsOpen)
             {
-                Comms.arduino_mega.sendRawData(data);
+                Comms.ports[active_port].Write(data, 0, data.Length);
+                Thread.Sleep(6); // so the arduino has time to process the data sent. Do not remove.
+            }
+            if(DebugEnabled == true)
+            {
+                Debug.addStatement(data);
             }
         }
 
-        // sends a command
+        /// <summary>
+        /// Sendns a user-created command readable by the arduino.
+        /// </summary>
+        /// <param name="c">Command to be sent.</param>
         public static void Send(Command c)
         {
-            Initialize();
-            if (arduino_mega.IsOpen)
+            if (ports[active_port].IsOpen)
             {
-                Comms.arduino_mega.sendRawData(c.Bytes);
+                Comms.Send(c.Bytes);
             }
         }
 
+        /// <summary>
+        /// This adds a set of bytes to the output buffer to be sent.
+        /// All commands should be added to the queue during FES stimulation
+        /// rather than using send directly. All commands sent not during stimulation
+        /// should not use this method.
+        /// </summary>
+        /// <param name="data"></param>
         public static void Queue(byte[] data)
         {
             Comms.Output.Buffer.Add(data);
         }
 
+        /// <summary>
+        /// This empties the output buffer of commands. Note: does not empty the input buffer.
+        /// </summary>
         public static void Empty()
         {
-            Initialize();
             Comms.Output.Buffer.Empty();
         }
 
+        /// <summary>
+        /// This executes every 10ms in the background once Comms.Open() is called and sends
+        /// the next command in the queue.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         static private void comm_timer_Tick(object sender, EventArgs e)
         {
             while (!Comms.Output.Buffer.IsEmpty) 
@@ -118,35 +248,28 @@ namespace CSharpProject
             }
         }
 
-        // this class handles all the data we are recieving
+        /// <summary>
+        /// This class handles all input sent to from the arduino. This includes load cell
+        /// and potentially in the future, EMG data.
+        /// </summary>
         public static class Input
         {
             public static void dataReceived(Object sender, SerialDataReceivedEventArgs args)
             {
-                try
-                {
-                    String data = arduino_mega.readData();
-                    Input.Buffer.addAndProcess(data);
-                }
-                catch (FormatException)
-                {
-                    // do nothing. The arduino has been known to do this.
-                }
-                catch (IOException)
-                {
-                    // OutputDebugMessage(L"We must have exited while receiving data. Awk.\n");
-                }
-                catch (OverflowException)
-                {
-                    // OutputDebugMessage(L"The arduino is trying to beat us to death with data.\n")
-                }
-
+                String data = Comms.ReadLine();
+                Input.Buffer.addAndProcess(data);
             }
 
-            // our input buffer
+            /// <summary>
+            /// This contains all data ever sent by the arduino since the opening of the serial port.
+            /// </summary>
             public static class Buffer
             {
-                // adds data to the buffer after some preprocessing
+                /// <summary>
+                /// Adds load cell data to the buffer after normalizing it to a percentage
+                /// of the user's maximum voluntary contraction (MVC).
+                /// </summary>
+                /// <param name="data"></param>
                 public static void addAndProcess(String data)
                 {
                     // first, we convert it to an unsigned 16-bit integer. 
@@ -209,8 +332,10 @@ namespace CSharpProject
                     }
                 }
 
-                // empty the contents of the buffer
-                public static void Clear()
+                /// <summary>
+                /// Empties the contents of the input buffer.
+                /// </summary>
+                public static void Empty()
                 {
                     Contents.Clear();
                 }
@@ -219,26 +344,18 @@ namespace CSharpProject
                 public static Data.Capsule Contents { get; set; } = new Data.Capsule();
                 public static List<String> Inputs { get; set; } = new List<String>();
             }
-
-            static bool debug_enabled;
-            public static bool DebugEnabled
-            {
-                get
-                {
-                    return debug_enabled;
-                }
-                set // make sure to also set our debug class values
-                {
-                    debug_enabled = value;
-                    Debug.Enabled = value;
-                }
-            }
-
         }
-        // this class handles all the data we are sending
+        
+        /// <summary>
+        /// This class handles all the output going to the serial ports. However, it is only a structure.
+        /// All communication should be done directly through the Comms class.
+        /// </summary>
         public static class Output
         {
-            // our output buffer
+            /// <summary>
+            /// This class contains the buffer of commands to be sent.
+            /// Throws error code 0x003 if the byte array to send exceeds 100 bytes in length.
+            /// </summary>
             public static class Buffer
             {
                 public static void Add(byte[] add_these)
@@ -248,14 +365,25 @@ namespace CSharpProject
                     {
                         bytes_to_send.Add(add_these);
                     }
+                    else
+                    {
+                        throw new ArgumentException("Byte array to send is exceedingly large. Error code 0x003.");
+                    }
                 }
 
-                // clears out our bytes to send
+                /// <summary>
+                /// Clears out the buffer of commands.
+                /// </summary>
                 public static void Empty()
                 {
                     bytes_to_send.Clear();
                 }
 
+                /// <summary>
+                /// Removes the byte array of the next command to send and returns it.
+                /// Throws Error code 0x002 if there are no commands left to pop.
+                /// </summary>
+                /// <returns>The next byte array to send.</returns>
                 internal static byte[] Pop()
                 {
                     if (bytes_to_send.Count > 0)
@@ -266,10 +394,13 @@ namespace CSharpProject
                     }
                     else
                     {
-                        throw new IndexOutOfRangeException("No commands left to pop. ");
+                        throw new IndexOutOfRangeException("No commands left to pop. Error code 0x002.");
                     }
                 }
 
+                /// <summary>
+                /// Checks to see if the comms Output buffer is empty.
+                /// </summary>
                 public static bool IsEmpty
                 {
                     get
@@ -279,107 +410,17 @@ namespace CSharpProject
                     }
                 }
 
+                /// <summary>
+                /// The raw bytes to be sent to the arduino.
+                /// </summary>
                 static List<byte[]> bytes_to_send = new List<byte[]>();
             }
         }
 
-        // this class handles the implementation of communication with the arduino
-        private class Arduino
-        {
-
-            public String readData()
-            {
-                if(this.IsOpen)
-                {
-                    return this.port.ReadLine();
-                    
-                }
-                return "";
-            }
-
-
-            // initializes our arduino port for use, including adding our event handler.
-            public void initializePort()
-            {
-                if (this.port == null)
-                {
-                    this.port = new SerialPort(Comms.PortName, Comms.BaudRate);
-                    this.port.DataReceived += new SerialDataReceivedEventHandler(Comms.Input.dataReceived);
-                }
-                else
-                {
-                    throw new IOException("Defined Error: Port has already been initialized. Try destroying the port first. ");
-                }
-
-            }
-
-
-            // destroys the arduino port.
-            public void destroyPort()
-            {
-                if (this.IsOpen == true)
-                {
-                    throw new IOException("Defined Error: Please close the port before destroying. ");
-                }
-                this.port = null;
-            }
-
-            // opens the arduino port. This is the base function implement
-            public void openPort()
-            {
-                if (this == null)
-                {
-                    throw new System.IO.IOException("Error: Port has not been initialized. ");
-                }
-                if (this.IsOpen == false) // only open the port if it is not already open.
-                {
-                    this.port.Open();
-                }
-            }
-
-            // closes the arduino port
-            public void closePort()
-            {
-                if (this == null)
-                {
-                    throw new IOException("Defined Error: Port has not been initialized. ");
-                }
-
-                if (this.IsOpen == true)
-                {
-                    this.port.Close();
-                }
-            }
-            
-            public void sendAbortSignal()
-            {
-                if (this.IsOpen == false)
-                {
-                    this.openPort();
-                }
-                byte[] byte_arr = new byte[1];
-                byte_arr[0] = 3;
-                sendRawData(byte_arr); // this is the abort signal 
-                this.closePort();
-            }
-            
-            // this sends the raw data, and is the base data sending function for the arduino.
-            public void sendRawData(byte[] byte_arr)
-            {
-                this.port.Write(byte_arr, 0, byte_arr.Length);
-            }
-
-            public bool IsOpen
-            {
-                get
-                {
-                    return port.IsOpen;
-                }
-            }
-            SerialPort port = null;
-        }
-
         static bool debug_enabled;
+        /// <summary>
+        /// Set to true when output debugging is enabled.
+        /// </summary>
         public static bool DebugEnabled
         {
             get
@@ -392,19 +433,63 @@ namespace CSharpProject
                 Debug.Enabled = value;
             }
         }
-        static Arduino arduino_mega = new Arduino();
         static bool initialized;
 
+        /// <summary>
+        /// The list of actual serial ports that perform communication. 
+        /// These are set up at runtime based on curretnly connected devices with serial capability.
+        /// </summary>
+        static List<SerialPort> ports = null;
+
+        /// <summary>
+        /// The default baud rate of all devices communicating through the Comms class.
+        /// </summary>
         public static int BaudRate { get; set; } = 19200;
-        public static String PortName { get; set; } = "COM3";
+
+        /// <summary>
+        /// The list of port names (COM1, COM2, etc.) Set during runtime.
+        /// </summary>
+        static List<String> port_names;
+
+        static int active_port;
+        /// <summary>
+        /// This is the index value of the active port
+        /// </summary>
+        public static String ActivePort {
+            get
+            {
+                return port_names[active_port];
+            }
+            set
+            {
+                if (port_names.Contains(value))
+                {
+                    active_port = port_names.IndexOf(value);
+                }
+                else
+                {
+                    throw new ArgumentException("Cannot set the port to " + value + ", no such port exists.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// This class generates arduino-readable commands to be send
+        /// via serial port with the Comms.Send(Command c) method.
+        /// </summary>
         public class Command
         {
+            /// <summary>
+            /// This creates an arduino-readable command
+            /// </summary>
+            /// <param name="type">The type of command to execute (status change, amplitude change, frequency change)</param>
+            /// <param name="node id">The node ID on which to execute this command</param>
+            /// <param name="data value">The value to set this command (i.e. amplitude of 255)</param>
             public Command(CommandType t, int id, int v)
             {
                 type = t;
                 node_id = id;
                 val = v;
-                // now the actual generation of the command (the encoding)
                 /*
                 Our CommandType directly correlateds with the Arduino's commandtype
                 According to our current encoding scheme, we do things like so:
@@ -422,22 +507,47 @@ namespace CSharpProject
 
             }
 
-            public int NodeID // the node ID the command refers to 
+            /// <summary>
+            ///  This funciot allows us to create an EMERGENCY_OFF command with only one argument.
+            ///  Throws error code 0x001 if the argument is not EMERGENCY_OFF
+            /// </summary>
+            /// <param name="type">can only be CommandType.EMERGENCY_OFF</param>
+            public Command(CommandType t)
+            {
+                if (t == CommandType.EMERGENCY_OFF)
+                {
+                    this.bytes[0] = 3;
+                }
+                else
+                {
+                    throw new ArgumentException("Cannot create command with only argument type " + Convert.ToString(t)
+                        + "; Error code 0x001");
+                }
+            }
+
+            int node_id;
+            /// <summary>
+            /// The node id this command acts on.
+            /// </summary>
+            public int NodeID
             {
                 get
                 {
                     return node_id;
                 }
-                set
-                {
-                    node_id = value;
-                }
             }
 
-            public CommandType type { get; set; } // the command type (amplitude change, frequency change, etc.)
-            int node_id;
+            /// <summary>
+            /// The type of command to be sent (see Comms.Command.CommandType)
+            /// </summary>
+            public CommandType type { get; set; }
+
             int val;
-            public int Value // the value the command has 
+
+            /// <summary>
+            /// The value for a given command. 
+            /// </summary>
+            public int Value
             {
                 get
                 {
@@ -449,12 +559,19 @@ namespace CSharpProject
                 }
             }
             byte[] bytes = new byte[2];
+
+            /// <summary>
+            /// The raw data a command contains.
+            /// </summary>
             public byte[] Bytes { get
                 {
                     return bytes;
                 }
             }
-            // a type of command we can send (i.e. status change, emergency off
+            /// <summary>
+            /// This enumeration is directly linked to the binary data the arduino expects to receive. 
+            /// As such it should not be changed. ever. Don't add things, don't move them around.
+            /// </summary>
             public enum CommandType
             {
                 AMPLITUDE_CHANGE,
@@ -463,16 +580,21 @@ namespace CSharpProject
                 EMERGENCY_OFF
             };
 
-            // a status that a node can have
+            /// <summary>
+            /// This enumeration is also directly linked to the binary data the arduino expects to receive
+            /// As such it should not be changed. ever. Don't add things, don't move them around.
+            /// </summary>
             public enum StatusType
             {
                 ACTIVE,
-                DORMANT,
-                RAMPING_UP,
-                RAMPING_DOWN
+                DORMANT
             }
         }
+        /// <summary>
+        /// The timer used to send communication in real-time to the arduino.
+        /// </summary>
         static System.Windows.Forms.Timer comm_timer = new System.Windows.Forms.Timer();
+
     }
     
 }
