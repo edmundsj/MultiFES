@@ -22,7 +22,7 @@ namespace CSharpProject
             if (initialized == false)
             {
                 experimental_timer.Interval = 10;
-                experimental_timer.Tick += new EventHandler(experimental_timer_Tick);
+                experimental_timer.Elapsed += new System.Timers.ElapsedEventHandler(experimental_timer_Tick);
                 initialized = true;
             }
         }
@@ -182,23 +182,40 @@ namespace CSharpProject
 
             if (Timekeeeper.ElapsedSeconds > Settings.Experimental.Duration)
             {
-                Stop();
+                Timekeeeper.Stop();
                 Comms.Close();
                 // write our MVC data to file.
-                ThreadPool.QueueUserWorkItem(new WaitCallback(Data.Experimental.ForceData.writeToFile), "temp_mvc-data");
-
+                int force_result = Data.ForceData.writeToFile("temp_mvc-data_");  // write the file
+                int amplitude_result = 0;
                 // write our amplitude data to file.
-                for (int i = 0; i < Data.Experimental.Amplitudes.Count; i++)
+                for (int i = 0; i < Data.Amplitudes.Count; i++)
                 {
-                    String str = "temp_CH-" + i.ToString() + "_amplitude_data";
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(Data.Experimental.Amplitudes[i].writeToFile), str);
+                    int temp_result = Data.Amplitudes[i].writeToFile("temp_CH-"
+                        + i.ToString() + "_amplitude-data_");
+                    if (temp_result != amplitude_result && amplitude_result == 0)
+                    {
+                        amplitude_result = temp_result;
+                    }
                 }
-                MessageBox.Show("Experiment Concluded. Data now being saved to temporary storage . . .");
+                if (force_result == 0 && amplitude_result == 0)
+                {
+                    MessageBox.Show("Successfully wrote all data to file.",
+                        "Data Write Successful.", MessageBoxButtons.OK,
+                       MessageBoxIcon.Information);
+                }
+                else
+                {
+                    String result = "There was an error writing the ";
+                    if (force_result != 0) result += "force data: Exit code " + force_result.ToString() + ",";
+                    if (amplitude_result != 0) result += " amplitude data: Exit code " + amplitude_result.ToString();
+
+                    MessageBox.Show(result, "Data write Failure", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
 
             }
 
         }
-        static System.Windows.Forms.Timer experimental_timer = new System.Windows.Forms.Timer();
+        static System.Timers.Timer experimental_timer = new System.Timers.Timer();
         static bool initialized;
     }
 }

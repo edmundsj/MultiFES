@@ -24,7 +24,7 @@ namespace CSharpProject
                 port_names = new List<String>();
 
                 comm_timer.Interval = 10;
-                comm_timer.Tick += new EventHandler(comm_timer_Tick);
+                comm_timer.Elapsed += new System.Timers.ElapsedEventHandler(comm_timer_Tick);
                 initialized = true;
 
                 // now we try to find the serial port if there exists one that is newer
@@ -643,7 +643,7 @@ namespace CSharpProject
         /// <summary>
         /// The timer used to send communication in real-time to the arduino.
         /// </summary>
-        static System.Windows.Forms.Timer comm_timer = new System.Windows.Forms.Timer();
+        static System.Timers.Timer comm_timer = new System.Timers.Timer();
 
     }
     
