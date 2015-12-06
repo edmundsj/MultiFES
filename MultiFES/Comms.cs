@@ -179,9 +179,8 @@ namespace CSharpProject
                     }
                 }
                 else return false;
-
-                Nodes.setAllZero(); // I would prefer not to have this here, but I'll live for now...
-                Comms.Send(new Command(Comms.Command.CommandType.EMERGENCY_OFF));
+                
+                Comms.Abort();
                 ports[active_port].Close();
 
                 return true;
@@ -193,6 +192,20 @@ namespace CSharpProject
                    MessageBoxIcon.Exclamation);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// This sends the abort signal to the FES board.
+        /// </summary>
+        /// <returns>True if successfully sent, false if otherwise.</returns>
+        public static bool Abort()
+        {
+            if (Comms.Send(new Command(Command.CommandType.EMERGENCY_OFF)) == true)
+            {
+                Nodes.setAllZero();
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -226,39 +239,39 @@ namespace CSharpProject
         /// through the serial port to the arduino for processing.
         /// </summary>
         /// <param name="data"></param>
-        public static void Send(byte[] data)
+        public static bool Send(byte[] data)
         {
             if(ports[active_port].IsOpen)
             {
                 Comms.ports[active_port].Write(data, 0, data.Length);
                 Thread.Sleep(6); // so the arduino has time to process the data sent. Do not remove.
+                if (DebugEnabled == true)
+                {
+                    Debug.addStatement(data);
+                }
+                return true;
             }
-            if(DebugEnabled == true)
-            {
-                Debug.addStatement(data);
-            }
+            
+            return false;
         }
 
         /// <summary>
         /// Sendns a user-created command readable by the arduino.
         /// </summary>
         /// <param name="c">Command to be sent.</param>
-        public static void Send(Command c)
+        public static bool Send(Command c)
         {
-            if (ports[active_port].IsOpen)
-            {
-                Comms.Send(c.Bytes);
-            }
+            return Comms.Send(c.Bytes);
         }
 
         /// <summary>
         /// This adds a set of bytes to the output buffer to be sent.
         /// All commands should be added to the queue during FES stimulation
         /// rather than using send directly. All commands sent not during stimulation
-        /// should not use this method.
+        /// should not use this method. This also makes sudden changes less sudden.
         /// </summary>
         /// <param name="data"></param>
-        public static void Queue(byte[] data)
+        public static void Queue(byte[] data) // TO ADD: THE ABILITY OF THIS FUNCTION TO 
         {
             Comms.Output.Buffer.Add(data);
         }

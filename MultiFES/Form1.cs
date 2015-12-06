@@ -180,7 +180,6 @@ namespace CSharpProject
 
                 // reset our timekeepers
                 Timekeeeper.Stop();
-                Timekeeeper.Reset();
 
             }
             // then we set the button's text to the opposite of what it was
@@ -226,7 +225,9 @@ namespace CSharpProject
 
         }
         
-        // saves the data we had just recorded
+        /// <summary>
+        /// Event handler that saves the data from the previous stimulation run.
+        /// </summary>
         private void dataToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // create the save box dialog
@@ -269,7 +270,9 @@ namespace CSharpProject
             }
         }
 
-        // this forcibly rotates our electrodes. It can only be called if the system is running.
+        /// <summary>
+        /// Event handler for the button than forcibly rotates electrodes. Only works if a timekeeper is on.
+        /// </summary>
         private void rotateToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (Timekeeeper.IsRunning)
@@ -339,15 +342,20 @@ namespace CSharpProject
             Settings.Experimental.Duration = 180;
         }
 
-        // begins the experiment.
+        /// <summary>
+        /// Begins an experiment.
+        /// </summary>
         private void beginToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // begin the experiment by opening the communications port
             if (Comms.Open() == true) // if we successfully connect to the arduino
             {
                 // first we need to set all amplitudes that aren't the selected node to zero, and that to max.
-                Data.Experimental.Clear();
-                Nodes.setAllZero();
+                Data.Experimental.Clear(); // clear out our old experimental data
+                Comms.Input.Buffer.Empty(); // empty out our input buffer of force data
+                Comms.Abort(); // send the abort signal
+                
+                Timekeeeper.Experimental.Start(); // start our experimental timer
 
                 // also change our stimulate button so it reads abort
                 stimulate_button.Text = "ABORT";
@@ -356,8 +364,6 @@ namespace CSharpProject
 
                 Nodes.SelectedNode.Amplitude = Nodes.SelectedNode.MaximumAmplitude;
 
-                Timekeeeper.Experimental.Reset();
-                Timekeeeper.Experimental.Start();
             }
         }
 

@@ -47,6 +47,7 @@ namespace CSharpProject
             // starts our stopwatch
             public static void Start()
             {
+                watch.Reset();
                 watch.Start();
                 IsRunning = true;
             }
@@ -89,6 +90,7 @@ namespace CSharpProject
             // starts our stopwatch
             public static void Start()
             {
+                watch.Reset();
                 watch.Start();
                 IsRunning = true;
             }

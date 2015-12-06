@@ -49,7 +49,10 @@ namespace CSharpProject
             statements.Add(parseCommand(arr));
         }
 
-        // takes of the first debug statement on the list and returns it
+        /// <summary>
+        /// Pops a statement off the bottom of the statements "stack" if you will
+        /// </summary>
+        /// <returns>The 0-indexed statement</returns>
         public static String PopStatement()
         {
             if(statements.Count > 0)
