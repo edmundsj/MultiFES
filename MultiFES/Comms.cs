@@ -7,10 +7,13 @@ using System.Threading;
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace CSharpProject
+namespace MultiFES
 {
-    // this class handles communication to and from the arduino
-    static class Comms
+    /// <summary>
+    /// This class handles all communication to and from the Arduino.
+    /// Everything you send and do should be through this class.
+    /// </summary>
+    public static class Comms
     {
         /// <summary>
         /// Initializes our Comms class by detecting any available serial ports and setting
@@ -24,7 +27,7 @@ namespace CSharpProject
                 port_names = new List<String>();
 
                 comm_timer.Interval = 10;
-                comm_timer.Elapsed += new System.Timers.ElapsedEventHandler(comm_timer_Tick);
+                comm_timer.Tick += new System.EventHandler(comm_timer_Tick);
                 initialized = true;
 
                 // now we try to find the serial port if there exists one that is newer
@@ -75,10 +78,10 @@ namespace CSharpProject
             if (Comms.Close()) // if we can successfully close the port
             {
                 var proc = new Process();
-                proc.StartInfo.FileName = Settings.AVRDUDE_PATH + "avrdude.exe";
-                proc.StartInfo.Arguments = "-C\"" + Settings.AVRDUDE_PATH
+                proc.StartInfo.FileName = Settings.AvrdudePath + "avrdude.exe";
+                proc.StartInfo.Arguments = "-C\"" + Settings.AvrdudePath
                     + "avrdude.conf\" -cwiring -P" + Comms.ActivePort + " -patmega2560 -b115200 -D -Uflash:w:\""
-                    + Settings.ARDUINO_PATH + "binary_code.mega.hex:i";
+                    + Settings.ArduinoPath + "binary_code.mega.hex:i";
                 //proc.StartInfo.CreateNoWindow = true;
                 //proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
@@ -104,30 +107,35 @@ namespace CSharpProject
         /// <returns>Returns true if successful.</returns>
         public static bool Open() // this opens our communication with the arduino by opening the port
         {
-            try {
-                if (ports[active_port].IsOpen == false)
+            if (IsOpen == false)
+            {
+                try
                 {
-                    ports[active_port].Open();
+                    if (ports[active_port].IsOpen == false)
+                    {
+                        ports[active_port].Open();
+                    }
+                    Comms.comm_timer.Enabled = true;
+                    Comms.comm_timer.Start();
+                    return true;
+
                 }
-                Comms.comm_timer.Enabled = true;
-                Comms.comm_timer.Start();
-                return true;
-                
+                catch (NullReferenceException null_exception)
+                {
+                    MessageBox.Show("Please plug in your device and Click File->Connect.\n"
+                        + null_exception.Message, "Arduino Error", MessageBoxButtons.OK,
+                       MessageBoxIcon.Exclamation);
+                    return false;
+                }
+                catch (Exception any_exception)
+                {
+                    MessageBox.Show("Unable to open communication with the Arduino. Please ensure it is " +
+                       "properly plugged in. " + any_exception.Message, "Arduino Error", MessageBoxButtons.OK,
+                       MessageBoxIcon.Exclamation);
+                    return false;
+                }
             }
-            catch(NullReferenceException null_exception)
-            {
-                MessageBox.Show("Please plug in your device and Click File->Connect.\n" 
-                    + null_exception.Message, "Arduino Error", MessageBoxButtons.OK,
-                   MessageBoxIcon.Exclamation);
-                   return false;
-            }
-            catch (Exception any_exception)
-            {
-                MessageBox.Show("Unable to open communication with the Arduino. Please ensure it is " + 
-                   "properly plugged in. " + any_exception.Message, "Arduino Error", MessageBoxButtons.OK, 
-                   MessageBoxIcon.Exclamation);
-                return false;
-            }
+            else return true;
         }
 
         /// <summary>
@@ -218,8 +226,7 @@ namespace CSharpProject
         {
             if (Comms.IsOpen == false)
             {
-                Comms.Open();
-                
+                Comms.Open(); // if the port is not open, open it.
             }
 
             Comms.Disable(); // disables the comm_timer to prevent further command execution
@@ -236,15 +243,32 @@ namespace CSharpProject
         }
 
         /// <summary>
+        /// Forces an execute of the commands in the queue.
+        /// </summary>
+        public static void Execute()
+        {
+            while(!Comms.Output.Buffer.IsEmpty)
+            {
+                Comms.Send(Comms.Output.Buffer.Pop());
+            }
+        }
+
+        /// <summary>
         /// Reads a line from the active serial port.
         /// </summary>
         /// <returns>Returns the line read from the serial port</returns>
         public static string ReadLine()
         {
             try {
-                return Comms.ports[active_port].ReadLine();
+                if (Comms.IsOpen)
+                {
+                    return Comms.ports[active_port].ReadLine();
+                }
             }
+            catch(InvalidOperationException)
+            {
 
+            }
             catch (FormatException)
             {
                 // do nothing. The arduino has been known to do this.
@@ -260,7 +284,7 @@ namespace CSharpProject
 
             return ""; // a null value
         }
-
+        
         /// <summary>
         /// This is the base Send method of which all others are based. Sends a stream of raw bytes
         /// through the serial port to the arduino for processing.
@@ -272,7 +296,7 @@ namespace CSharpProject
             {
                 Comms.ports[active_port].Write(data, 0, data.Length);
                 Thread.Sleep(6); // so the arduino has time to process the data sent. Do not remove.
-                if (DebugEnabled == true)
+                if (Comms.Output.DebugEnabled == true)
                 {
                     Debug.addStatement(data);
                 }
@@ -290,6 +314,7 @@ namespace CSharpProject
         {
             return Comms.Send(c.Bytes);
         }
+        
 
         /// <summary>
         /// This adds a set of bytes to the output buffer to be sent.
@@ -321,6 +346,7 @@ namespace CSharpProject
         {
             while (!Comms.Output.Buffer.IsEmpty) 
             {
+               
                 Comms.Send(Comms.Output.Buffer.Pop());
             }
         }
@@ -331,10 +357,17 @@ namespace CSharpProject
         /// </summary>
         public static class Input
         {
+            /// <summary>
+            /// Event handler that gets data from the arduino as we recieve it.
+            /// </summary>
             public static void dataReceived(Object sender, SerialDataReceivedEventArgs args)
             {
                 String data = Comms.ReadLine();
                 Input.Buffer.addAndProcess(data);
+                if (Comms.Input.DebugEnabled == true)
+                {
+                    Debug.addStatement("IN: " + data);
+                }
             }
 
             /// <summary>
@@ -349,63 +382,63 @@ namespace CSharpProject
                 /// <param name="data"></param>
                 public static void addAndProcess(String data)
                 {
-                    // first, we convert it to an unsigned 16-bit integer. 
-                    int converted_data = Convert.ToInt16(data);
-                    double result = 0;
-                    switch (Settings.LoadCellVoltage)
+                    int converted_data;
+                    if (int.TryParse(data, out converted_data))
                     {
-                        case 9:
-                            {
-                                switch (Settings.LoadCellVoltage)
+                        // first, we convert it to an unsigned 16-bit integer. 
+                        //int converted_data = Convert.ToInt16(data);
+                        double result = 0;
+                        switch (Settings.LoadCellVoltage)
+                        {
+                            case 9:
                                 {
-                                    case 5:
-                                        result = (-0.0089 * converted_data + 8.5675);
-                                        break;
-                                    case 10:
-                                        result = (-0.0168 * converted_data + 12.62);
-                                        break;
-                                    case 20:
-                                        result = (-0.0335 * converted_data + 21.209);
-                                        break;
+                                    switch (Settings.LoadCellVoltage)
+                                    {
+                                        case 5:
+                                            result = (-0.0089 * converted_data + 8.5675);
+                                            break;
+                                        case 10:
+                                            result = (-0.0168 * converted_data + 12.62);
+                                            break;
+                                        case 20:
+                                            result = (-0.0335 * converted_data + 21.209);
+                                            break;
+                                    }
+                                    break;
                                 }
-                                break;
-                            }
-                        case 5:
-                            {
-                                switch (Settings.LoadCellResistance)
+                            case 5:
                                 {
-                                    case 5:
-                                        result = (-0.0092 * converted_data + 8.4856);
-                                        break;
-                                    case 10:
-                                        result = (-0.017 * converted_data + 12.857);
-                                        break;
-                                    case 20:
-                                        result = (-0.0333 * converted_data + 21.25);
-                                        break;
+                                    switch (Settings.LoadCellResistance)
+                                    {
+                                        case 5:
+                                            result = (-0.0092 * converted_data + 8.4856);
+                                            break;
+                                        case 10:
+                                            result = (-0.017 * converted_data + 12.857);
+                                            break;
+                                        case 20:
+                                            result = (-0.0333 * converted_data + 21.25);
+                                            break;
+                                    }
+                                    break;
                                 }
-                                break;
-                            }
-                    }
-                    if (Data.Experimental.MaxForce > 4)
-                    { // our max MVC should have at least a value of 4kg.
-                        result /= Data.Experimental.MaxForce;
-                    }
+                        }
+                        result *= 9.8; // this allows the force to be represented in newtons.
 
-                    if (Data.Experimental.BaselineForce > -0.03 && Data.Experimental.BaselineForce < 0.2) // the normalized baseline
-                    { // if our baseline is within the expected range
-                        result -= Data.Experimental.BaselineForce;
-                    }
+                            /*
+                        if (Data.Experimental.BaselineForce > -0.03 && Data.Experimental.BaselineForce < 0.2) // the normalized baseline
+                        { // if our baseline is within the expected range
+                            result -= Data.Experimental.BaselineForce;
+                        }
+                        */
 
-                    // now we check our calibrated slopes to get a "real" value.
-                    
-                    // add our data to the buffer
-                    Contents.addData(Timekeeeper.ElapsedSeconds, result);
+                        // now we check our calibrated slopes to get a "real" value.
 
-                    // also, if we are running an experiment, add the data to the experimental data
-                    if(Timekeeeper.Experimental.IsRunning)
-                    {
-                        Data.Experimental.ForceData.addData(Timekeeeper.ElapsedSeconds, result);
+                        // add our data to the buffer
+                        Contents.addData(Timekeeeper.ElapsedSeconds, result);
+
+                        Data.AddData(Timekeeeper.ElapsedSeconds, result);
+                        // also, if we are running an experiment, add the data to the experimental data
                     }
                 }
 
@@ -417,9 +450,35 @@ namespace CSharpProject
                     Contents.Clear();
                 }
                 
-                
+                /// <summary>
+                /// The capsule contained by our input buffer that stores data
+                /// </summary>
                 public static Data.Capsule Contents { get; set; } = new Data.Capsule();
-                public static List<String> Inputs { get; set; } = new List<String>();
+            }
+
+            static bool debug_enabled;
+            /// <summary>
+            /// Set to true when output debugging is enabled.
+            /// </summary>
+            public static bool DebugEnabled
+            {
+                get
+                {
+                    return debug_enabled;
+                }
+                set
+                {
+                    debug_enabled = value;
+                    // if the output debug is the only one to be true, set debug to true
+                    if (value == true && Comms.Output.DebugEnabled == false)
+                    {
+                        Debug.Enabled = value;
+                    }
+                    else if (value == false && Comms.Output.DebugEnabled == false)
+                    {
+                        Debug.Enabled = value;
+                    }
+                }
             }
         }
         
@@ -435,12 +494,16 @@ namespace CSharpProject
             /// </summary>
             public static class Buffer
             {
-                public static void Add(byte[] add_these)
+                /// <summary>
+                /// Add content to the buffer
+                /// </summary>
+                /// <param name="byte_arr">The byte array of data to add</param>
+                public static void Add(byte[] byte_arr)
                 {
                     // check that the byte array is not of unreasonable length.
-                    if(add_these.Length < 100)
+                    if(byte_arr.Length < 100)
                     {
-                        bytes_to_send.Add(add_these);
+                        bytes_to_send.Add(byte_arr);
                     }
                     else
                     {
@@ -492,24 +555,32 @@ namespace CSharpProject
                 /// </summary>
                 static List<byte[]> bytes_to_send = new List<byte[]>();
             }
-        }
-
-        static bool debug_enabled;
-        /// <summary>
-        /// Set to true when output debugging is enabled.
-        /// </summary>
-        public static bool DebugEnabled
-        {
-            get
+            static bool debug_enabled;
+            /// <summary>
+            /// Set to true when output debugging is enabled.
+            /// </summary>
+            public static bool DebugEnabled
             {
-                return debug_enabled;
-            }
-            set
-            {
-                debug_enabled = value;
-                Debug.Enabled = value;
+                get
+                {
+                    return debug_enabled;
+                }
+                set
+                {
+                    debug_enabled = value;
+                    // if the output debug is the only one to be true, set debug to true
+                    if(value == true && Comms.Input.DebugEnabled == false)
+                    {
+                        Debug.Enabled = value;
+                    }
+                    else if(value == false && Comms.Input.DebugEnabled == false)
+                    {
+                        Debug.Enabled = value;
+                    }
+                }
             }
         }
+        
         static bool initialized;
 
         /// <summary>
@@ -559,9 +630,9 @@ namespace CSharpProject
             /// <summary>
             /// This creates an arduino-readable command
             /// </summary>
-            /// <param name="type">The type of command to execute (status change, amplitude change, frequency change)</param>
-            /// <param name="node id">The node ID on which to execute this command</param>
-            /// <param name="data value">The value to set this command (i.e. amplitude of 255)</param>
+            /// <param name="t">The type of command to execute (status change, amplitude change, frequency change)</param>
+            /// <param name="id">The node ID on which to execute this command</param>
+            /// <param name="v">The value to set this command (i.e. amplitude of 255)</param>
             public Command(CommandType t, int id, int v)
             {
                 type = t;
@@ -581,19 +652,20 @@ namespace CSharpProject
 
                 bytes[0] = (byte)Debug.extractBitData(data, 0, 7); // safe because we are only returning 8 places
                 bytes[1] = (byte)Debug.extractBitData(data, 8, 15); // the rest of our data 
-
+                Text = Convert.ToString(Convert.ToInt16(bytes[0]) + Convert.ToInt16(bytes[1]) * Convert.ToInt16(Math.Pow(2, 8)));
             }
 
             /// <summary>
             ///  This funciot allows us to create an EMERGENCY_OFF command with only one argument.
             ///  Throws error code 0x001 if the argument is not EMERGENCY_OFF
             /// </summary>
-            /// <param name="type">can only be CommandType.EMERGENCY_OFF</param>
+            /// <param name="t">can only be CommandType.EMERGENCY_OFF</param>
             public Command(CommandType t)
             {
                 if (t == CommandType.EMERGENCY_OFF)
                 {
                     this.bytes[0] = 3;
+                    Thread.Sleep(10);
                 }
                 else
                 {
@@ -645,15 +717,34 @@ namespace CSharpProject
                     return bytes;
                 }
             }
+
+            /// <summary>
+            /// The raw text of the command
+            /// </summary>
+            public String Text { get; set; }
+            
+
             /// <summary>
             /// This enumeration is directly linked to the binary data the arduino expects to receive. 
             /// As such it should not be changed. ever. Don't add things, don't move them around.
             /// </summary>
             public enum CommandType
             {
+                /// <summary>
+                /// The command that changes the amplitude for a given node
+                /// </summary>
                 AMPLITUDE_CHANGE,
+                /// <summary>
+                /// The command that sets a node to ACTIVE or DORMANT.
+                /// </summary>
                 STATUS_CHANGE,
+                /// <summary>
+                /// Command that changes the frequency of a node
+                /// </summary>
                 FREQUENCY_CHANGE,
+                /// <summary>
+                /// Emergency abort signal. Turns off all nodes.
+                /// </summary>
                 EMERGENCY_OFF
             };
 
@@ -663,14 +754,24 @@ namespace CSharpProject
             /// </summary>
             public enum StatusType
             {
+                /// <summary>
+                /// Node will be pulsed at the frequency specified on the FES system
+                /// </summary>
                 ACTIVE,
+                /// <summary>
+                /// Node will not be pulsed, (not equivalent to zero amplitude)
+                /// </summary>
                 DORMANT
             }
         }
         /// <summary>
         /// The timer used to send communication in real-time to the arduino.
         /// </summary>
-        static System.Timers.Timer comm_timer = new System.Timers.Timer();
+        static System.Windows.Forms.Timer comm_timer = new System.Windows.Forms.Timer();
+        
+        /// <summary>
+        /// See whether our active communications port is open.
+        /// </summary>
         public static bool IsOpen
         {
             get

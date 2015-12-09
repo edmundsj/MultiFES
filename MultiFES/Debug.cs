@@ -5,13 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace CSharpProject
+namespace MultiFES
 {
     /// <summary>
     /// This class handles all debugging-related things. It is intended to be used in tandem
     /// with the UI, rather than acting as an auxiliary set of code.
     /// </summary>
-    static class Debug
+    public static class Debug
     {
         /// <summary>
         /// Checks to see if the debug Buffer is zero
@@ -43,10 +43,19 @@ namespace CSharpProject
         /// <summary>
         /// Adds a statement to our statement buffer to be handled later.
         /// </summary>
-        /// <param name="sta">The raw data</param>
+        /// <param name="arr">The raw data</param>
         public static void addStatement(byte[] arr)
         {
             statements.Add(parseCommand(arr));
+        }
+
+        /// <summary>
+        /// Adds a simple string statement to our debug buffer
+        /// </summary>
+        /// <param name="s">The statement as a string</param>
+        public static void addStatement(String s)
+        {
+            statements.Add(s);
         }
 
         /// <summary>

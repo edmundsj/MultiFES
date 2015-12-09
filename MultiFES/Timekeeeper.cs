@@ -7,12 +7,12 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace CSharpProject
+namespace MultiFES
 {
     /// <summary>
     /// This static class keeps track of time, both experimental time and general time.
     /// </summary>
-    static class Timekeeeper
+    public static class Timekeeeper
     {
         /// <summary>
         /// Initializes our timekeepers by adding event handlers 
@@ -26,6 +26,9 @@ namespace CSharpProject
                 initialized = true;
             }
         }
+        /// <summary>
+        /// Stops our General and Experimental stopwatches
+        /// </summary>
         public static void Stop()
         {
             General.Stop();
@@ -33,6 +36,9 @@ namespace CSharpProject
             experimental_timer.Stop();
         }
 
+        /// <summary>
+        /// Resets our General and Experimental stopwatches
+        /// </summary>
         public static void Reset()
         {
             General.Reset();
@@ -44,28 +50,49 @@ namespace CSharpProject
         /// </summary>
         public static class General
         {
-            // starts our stopwatch
+            /// <summary>
+            /// Resets and starts our General stopwatch
+            /// </summary>
             public static void Start()
             {
                 watch.Reset();
                 watch.Start();
-                IsRunning = true;
+                is_running = true;
             }
 
-            // stops our stopwatch
+            /// <summary>
+            /// Stops our General stopwatch
+            /// </summary>
             public static void Stop()
             {
                 watch.Stop();
-                IsRunning = false;
+                is_running = false;
             }
 
-            // resets our stopwatch
+            /// <summary>
+            /// Resets our General stopwatch
+            /// </summary>
             public static void Reset()
             {
                 watch.Reset();
+                Data.General.Clear();
             }
 
-            public static bool IsRunning { get; set; }
+            static bool is_running;
+            /// <summary>
+            /// checks whether our General stopwatch is running.
+            /// </summary>
+            public static bool IsRunning
+            {
+                get
+                {
+                    return is_running;
+                }
+            }
+
+            /// <summary>
+            /// Gets the elapsed seconds of our Experimental Timekeeper
+            /// </summary>
             public static double ElapsedSeconds
             {
                 get
@@ -87,28 +114,50 @@ namespace CSharpProject
         public static class Experimental
         {
 
-            // starts our stopwatch
+            /// <summary>
+            /// Resets then starts our Experimental stopwatch
+            /// </summary>
             public static void Start()
             {
                 watch.Reset();
                 watch.Start();
-                IsRunning = true;
+                experimental_timer.Enabled = true;
+                experimental_timer.Start();
+                is_running = true;
             }
 
-            // stops our stopwatch
+            /// <summary>
+            /// Stops our Experimental stopwatch
+            /// </summary>
             public static void Stop()
             {
                 watch.Stop();
-                IsRunning = false;
+                is_running = false;
+                experimental_timer.Stop();
+                experimental_timer.Enabled = false;
             }
 
-            // resets our stopwatch
+            /// <summary>
+            /// Resets our Experimental stopwatch
+            /// </summary>
             public static void Reset()
             {
                 watch.Reset();
             }
 
-            public static bool IsRunning { get; set; }
+            static bool is_running;
+            /// <summary>
+            /// Checks whether the Experimental stopwatch is running or not.
+            /// </summary>
+            public static bool IsRunning {
+                get
+                {
+                    return is_running;
+                }
+            }
+            /// <summary>
+            /// The number of elapsed seconds for our experimental Timekeeper
+            /// </summary>
             public static double ElapsedSeconds
             {
                 get
@@ -165,7 +214,7 @@ namespace CSharpProject
         }
 
         /// <summary>
-        /// The experimental timer tick 
+        /// This contains all the necessary information for the Autorun() function
         /// </summary>
         private static void experimental_timer_Tick(object sender, EventArgs e)
         {
@@ -185,12 +234,12 @@ namespace CSharpProject
                 Timekeeeper.Stop();
                 Comms.Close();
                 // write our MVC data to file.
-                int force_result = Data.ForceData.writeToFile("temp_mvc-data_");  // write the file
+                int force_result = Data.Experimental.ForceData.writeToFile("temp_mvc-data_");  // write the file
                 int amplitude_result = 0;
                 // write our amplitude data to file.
-                for (int i = 0; i < Data.Amplitudes.Count; i++)
+                for (int i = 0; i < Data.Experimental.Amplitudes.Count; i++)
                 {
-                    int temp_result = Data.Amplitudes[i].writeToFile("temp_CH-"
+                    int temp_result = Data.Experimental.Amplitudes[i].writeToFile("temp_CH-"
                         + i.ToString() + "_amplitude-data_");
                     if (temp_result != amplitude_result && amplitude_result == 0)
                     {

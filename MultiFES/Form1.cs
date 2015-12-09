@@ -12,11 +12,13 @@ using System.Windows.Forms.DataVisualization.Charting;
 using System.Threading;
 using System.Diagnostics;
 
-namespace CSharpProject
+namespace MultiFES
 {
     public partial class Form1 : Form
     {
-        
+        /// <summary>
+        /// Initializes our main UI with all its components and goodies.
+        /// </summary>
         public Form1()
         {
             InitializeComponent();
@@ -40,13 +42,15 @@ namespace CSharpProject
                     MessageBox.Show("There was an error with the settings. Please check the default node array XML file.",
                          "Connection Failure", MessageBoxButtons.OK,
                        MessageBoxIcon.Exclamation);
-                    Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
                 }
                 else
                 {
                     initializePadArray();                   // create our Nodes pad on the UI with all the buttons.
+                    Nodes.setGlobalFrequency();         // set our initial frequencies to what we want
+                    
                 }
             }
+            // initialize communications
             if(Comms.Initialize() == false)
             {
                 MessageBox.Show("Could not connect to Arduino. Please ensure it is plugged in, then click File-> Arduino -> Connect",
@@ -55,7 +59,6 @@ namespace CSharpProject
             }
             else
             {
-                
             }
             
             Timekeeeper.Initialize();               // initializes our timekeeper
@@ -115,8 +118,44 @@ namespace CSharpProject
             updatePadUI();
             if (Timekeeeper.IsRunning)
             {
-                force_chart.Series[0].Points.DataBindXY(Data.ForceData.Timestamps,
-                    Data.ForceData.Values);
+                if (Data.ForceData.Count > 0)
+                {
+                    if (Data.ForceData.IsValid)
+                    {
+                        
+                        // first check and make sure we don't need to zero the x-axis
+                        if(Data.ForceData.Timestamps[Data.ForceData.Count - 1] < force_chart.ChartAreas[0].AxisX.Minimum)
+                        {
+                            force_chart.ChartAreas[0].AxisX.Minimum = 0;
+                            ClearGraph();
+                        }
+                        
+                        if (force_chart.Series[0].Points.Count > 0)
+                        {
+                            force_chart.ChartAreas[0].AxisX.Minimum = force_chart.Series[0].Points[0].XValue;
+                            force_chart.ChartAreas[0].AxisX.Maximum = Data.ForceData.Timestamps[Data.ForceData.Count - 1]; // the new maximum
+                            /*
+                            if (Data.ForceData.Values[Data.ForceData.Count - 1] < force_chart.Series[0].Points.FindMinByValue().YValues[0])
+                            {
+                                force_chart.ChartAreas[0].AxisY.Minimum = force_chart.Series[0].Points.FindMinByValue().YValues[0];
+                            }
+                            */
+                        }
+                        
+
+                        force_chart.Series[0].Points.Add(new DataPoint(Data.ForceData.Timestamps[Data.ForceData.Count - 1],
+                            Data.ForceData.Values[Data.ForceData.Count - 1]));
+                        if (force_chart.Series[0].Points.Count > 75)
+                        {
+                            force_chart.Series[0].Points.RemoveAt(0);
+
+                        }
+
+                    }
+                    // problem: I think while we are trying to bind the data (which is an iterative process)
+                    // we get new data and we add it. This is likely due to the change of the Comms timer to 
+                    // a windows forms timer.
+                }
             }
 
             // update our labels and sliders according to the current valid frequency.
@@ -152,6 +191,15 @@ namespace CSharpProject
             {
                 stimulate_button.Text = "STIMULATE";
             }
+        }
+
+        /// <summary>
+        /// Clears the force chart for use.
+        /// </summary>
+        public void ClearGraph()
+        {
+            force_chart.Refresh();
+            force_chart.Series[0].Points.Clear();
         }
 
         /// <summary>
@@ -214,13 +262,13 @@ namespace CSharpProject
         /// </summary>
         private void arduinoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (Comms.DebugEnabled == false)
+            if (Comms.Output.DebugEnabled == false)
             {
-                Comms.DebugEnabled = true;
+                Comms.Output.DebugEnabled = true;
             }
             else
             {
-                Comms.DebugEnabled = false;
+                Comms.Output.DebugEnabled = false;
             }
 
         }
@@ -232,11 +280,12 @@ namespace CSharpProject
         {
             // create the save box dialog
             SaveFileDialog save_file_dialog = new SaveFileDialog();
-            save_file_dialog.InitialDirectory = Settings.CSV_PATH;
+            save_file_dialog.InitialDirectory = Settings.DataPath;
 
 
             if (save_file_dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                Data.ForceData.Clean();
                 // NOTE: DATA.EXPERIMENTAL.FORCEDATA WILL ONLY HAVE DATA IF YOU ARE RUNNING AN EXPERIMENT (duh)
                 int force_result = Data.ForceData.writeToFile(save_file_dialog.FileName + "_mvc-data_");  // write the file
                 int amplitude_result = 0;
@@ -277,7 +326,11 @@ namespace CSharpProject
         {
             if (Timekeeeper.IsRunning)
             {
-                ThreadPool.QueueUserWorkItem(new WaitCallback(Nodes.rotateNodesAsync));
+                if (Timekeeeper.Experimental.IsRunning == false) // only allow explicit node rotation if we aren't
+                    // currently running an experiment
+                {
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(Nodes.rotateNodesAsync));
+                }
             }
         }
 
@@ -359,14 +412,20 @@ namespace CSharpProject
         /// </summary>
         private void beginToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // begin the experiment by opening the communications port
-            if (Comms.Open() == true) // if we successfully connect to the arduino
+            bool begin_experiment = true;
+            // only start an experiment if our max amplitudes are greater than zero.
+            
+            if (begin_experiment == true)
             {
+                // begin the experiment by opening the communications port
+                if (Comms.IsOpen == false) // if we successfully connect to the arduino
+                    Comms.Open();
+
                 // first we need to set all amplitudes that aren't the selected node to zero, and that to max.
                 Data.Experimental.Clear(); // clear out our old experimental data
                 Comms.Input.Buffer.Empty(); // empty out our input buffer of force data
-                Comms.Abort(); // send the abort signal
-                
+                Nodes.setAllZero();
+
                 Timekeeeper.Experimental.Start(); // start our experimental timer
 
                 // also change our stimulate button so it reads abort
@@ -375,8 +434,11 @@ namespace CSharpProject
                 // set our selected node to the maximum amplitude
 
                 Nodes.SelectedNode.Amplitude = Nodes.SelectedNode.MaximumAmplitude;
-
             }
+            else
+            {
+            }
+
         }
 
 
@@ -435,7 +497,6 @@ namespace CSharpProject
 
             
         }
-
         /// <summary>
         /// Event handler that reconnects the serial port if the user did not plug it in when 
         /// they should have. Found under File -> Arduino -> Connect
@@ -455,6 +516,7 @@ namespace CSharpProject
                      "Connection Failure", MessageBoxButtons.OK,
                    MessageBoxIcon.Exclamation);
             }
+            Comms.Open();
         }
 
         private void uploadCodeToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -480,6 +542,11 @@ namespace CSharpProject
                    MessageBoxIcon.Exclamation);
             }
         }
+
+        /// <summary>
+        /// This unchecks all other menu items for a given ToolStripMenuItem
+        /// </summary>
+        /// <param name="selectedMenuItem"></param>
         public void UncheckOtherToolStripMenuItems(ToolStripMenuItem selectedMenuItem)
         {
             selectedMenuItem.Checked = true;
@@ -494,6 +561,72 @@ namespace CSharpProject
                                                 where !item.Equals(selectedMenuItem)
                                                 select ltoolStripMenuItem))
                 (ltoolStripMenuItem).Checked = false;
+        }
+
+        private void inputToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (Comms.Input.DebugEnabled == false)
+            {
+                Comms.Input.DebugEnabled = true;
+            }
+            else
+            {
+                Comms.Input.DebugEnabled = false;
+            }
+        }
+
+        /// <summary>
+        /// The button we press when we want to test something.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void testingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void disconnectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Comms.Close();
+        }
+
+        private void toolStripMenuItem8_Click(object sender, EventArgs e)
+        {
+            Settings.Experimental.RampTime = 2.0;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
+        }
+
+        private void toolStripMenuItem9_Click(object sender, EventArgs e)
+        {
+            Settings.Experimental.RampTime = 3.0;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
+        }
+
+        private void toolStripMenuItem10_Click(object sender, EventArgs e)
+        {
+            Settings.Experimental.RampTime = 4.0;
+            UncheckOtherToolStripMenuItems((ToolStripMenuItem)sender);
+        }
+
+        /// <summary>
+        /// Calibrates the user's maximum force
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void calibrateForceToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Comms.Open();
+            Timekeeeper.General.Start();
+            // now record some data...
+            MessageBox.Show("Please flex as hard as you can.");
+            Thread.Sleep(2000);
+
+            Data.ForceData.Clean(); // remove junk values
+            Data.Experimental.MaxForce = Data.ForceData.Average;
+            Data.ForceData.Clear(); // destroy the data, we got what we needed.
+
+            Timekeeeper.General.Stop();
+            Comms.Close();
         }
     }
 }

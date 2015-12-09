@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MultiFES")]
+[assembly: AssemblyTitle("MuiltFES.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("MultiFES")]
+[assembly: AssemblyProduct("MuiltFES.Tests")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("2697c821-e32b-4fb4-a68d-1c1f7c591adf")]
+[assembly: Guid("07f5f552-b889-48b2-84ea-d7dd144adc48")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -34,7 +34,3 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("MultiFES.Tests")]
-[assembly: InternalsVisibleTo("MultiFES.Explorables")]
-[assembly: InternalsVisibleTo("MultiFES.Tests1")]
-
